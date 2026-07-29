@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#090909"><title>川上ウマウマレース</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="dark">
+<header class="topbar"><div><small>KAWAKAMI UMAUMA RACE</small><h1>川上ウマウマレース</h1></div><div class="head-actions"><button id="themeBtn">☀ 明るい版</button><div class="wallet">所持 <b id="wallet">10,000</b> pt</div></div></header>
+<main>
+<section id="homePanel" class="panel active"><div class="hero"><div class="horse-logo">♞</div><p>G1 HORSE PARTY SIMULATOR</p><h2>本物の競馬みたいに、予想して叫べ。</h2><div class="mode-grid"><button id="soloModeBtn" class="mode primary"><b>ひとりで遊ぶ</b><span>能力調整・単勝予想対応</span></button><button id="hostModeBtn" class="mode"><b>ルームを作る</b><span>オンライン主催</span></button><button id="joinModeBtn" class="mode"><b>ルームに参加</b><span>6桁番号で参加</span></button></div><p id="onlineStatus" class="note">オンライン機能：設定確認中…</p></div></section>
+
+<section id="joinPanel" class="panel"><h2>ルームに参加</h2><div class="card form"><label>表示名<input id="joinName" maxlength="12" placeholder="麟太郎"></label><label>ルーム番号<input id="roomCodeInput" maxlength="6" inputmode="numeric" placeholder="123456"></label><button id="joinRoomBtn" class="primary">参加する</button><p id="joinMessage" class="note"></p></div><button class="ghost back-home">ホームへ</button></section>
+
+<section id="setupPanel" class="panel"><div class="section-head"><div><small id="setupModeLabel">SOLO</small><h2>レース設定</h2></div></div><div class="controls"><label>競馬場<select id="venue"></select></label><label>G1レース<select id="racePreset"></select></label><label>馬場<select id="going"><option>良</option><option>稍重</option><option>重</option><option>不良</option></select></label><label>頭数<select id="fieldSize"><option>8</option><option selected>10</option><option>12</option></select></label></div><button id="generateBtn" class="primary big">レースを作る</button><button class="ghost back-home">ホームへ</button></section>
+
+<section id="guidePanel" class="panel"><div class="section-head"><div><small>COURSE GUIDE</small><h2 id="guideTitle">コース説明</h2></div></div><div class="guide-layout"><div class="course-map-wrap"><canvas id="guideCanvas" width="1100" height="620"></canvas><div class="legend"><span><i class="start-dot"></i>スタート</span><span><i class="goal-dot"></i>ゴール</span></div></div><div class="card guide-text"><h3>レースの見方</h3><p id="guideDescription"></p><ol><li>黄色の「START」から発走します。</li><li>馬番の丸が左から右へ一直線に進みます。</li><li>白黒の「GOAL」を先に通過した馬が勝ちです。</li></ol><button id="toBetBtn" class="primary big">オッズと出走馬を見る</button></div></div></section>
+
+<section id="lobbyPanel" class="panel"><div class="room-banner">ROOM <b id="roomCodeDisplay">------</b><button id="copyRoomBtn">番号をコピー</button></div><h2 id="lobbyRaceTitle"></h2><p id="lobbyConditions"></p><div id="participantList" class="participant-list"></div><button id="hostStartBtn" class="primary big">全員同時にレース開始</button></section>
+
+<section id="betPanel" class="panel"><div class="race-heading"><div><small id="raceNo">第1競走</small><h2 id="raceTitle"></h2></div><b id="conditions"></b></div>
+<div class="single-bet-title"><b>単勝</b><span>勝つ馬を1頭選んでください</span></div>
+<div class="bet-grid"><div><div id="oddsBoard" class="odds-board"></div></div><aside class="card ticket-box"><h3>買い目</h3><div id="selectionHelp" class="note">1頭選択してください</div><div id="selectedTicket" class="ticket">未選択</div><label>購入ポイント<input id="stake" type="number" min="100" step="100" value="500"></label><div class="estimated">想定オッズ <b id="estimatedOdds">--</b><br>想定払戻 <b id="estimatedPayout">--</b></div><button id="submitBetBtn" class="primary big" disabled>この買い目で開始</button></aside></div>
+<div id="parameterPanel" class="card parameter-panel"><div><h3>予想パラメーター調整</h3><p>選択した馬を、各項目±3・合計0の範囲で調整できます。上げた分だけ別項目を下げてください。</p></div><div id="parameterEditor" class="parameter-editor"><p class="note">出走馬をタップすると編集できます。</p></div></div>
+<button id="rerollBtn" class="ghost">条件を引き直す</button></section>
+
+<section id="waitingPanel" class="panel"><div class="center-card"><div class="spinner"></div><h2>主催者のスタート待ち</h2><p id="waitingText"></p><div id="waitingTicket" class="ticket"></div></div></section>
+
+<section id="countdownPanel" class="panel"><div class="countdown"><p>各馬ゲートイン完了</p><b id="countdownNumber">3</b></div></section>
+
+<section id="racePanel" class="panel race-panel"><div class="race-hud"><div><h2 id="liveTitle"></h2><span id="liveConditions"></span></div><div class="hud-metrics"><div><small>残り</small><b id="remaining">0m</b></div><div><small>先頭速度</small><b id="speedKmh">0.0km/h</b></div></div></div>
+<div id="commentary" class="commentary">各馬ゲートイン。</div>
+<div id="chosenHorseBanner" class="chosen-horse-banner" aria-live="polite"><span class="chosen-label">あなたが選んだ馬</span><span id="chosenHorseNumber" class="chosen-horse-number">--</span><b id="chosenHorseName">未選択</b></div>
+<div class="race-stage"><canvas id="track" width="1200" height="720" aria-label="競馬レース画面"></canvas></div>
+<div class="position-labels"><span>START</span><b>レース進行</b><span>GOAL</span></div><div id="positionStrip" class="position-strip" aria-label="スタートからゴールまでの各馬の位置"></div>
+<div class="race-controls"><div><b id="elapsed">0:00.0</b><span id="leader">先頭：---</span></div><span class="game-tempo">ゲームテンポで再生中</span></div></section>
+
+<section id="resultPanel" class="panel"><div class="result-title"><small>OFFICIAL RESULT</small><h2>確定</h2></div><div id="finishList" class="finish-list"></div><div id="payout" class="payout"></div><button id="nextRaceBtn" class="primary big">次のレースへ</button><button id="resetBtn" class="ghost">ポイントを10,000に戻す</button></section>
+</main>
+<footer>非公式ファンメイド試作版 / ゲーム内ポイント専用</footer>
+<script type="module" src="app.js"></script>
+</body></html>
