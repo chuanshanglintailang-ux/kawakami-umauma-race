@@ -2,26 +2,126 @@
 import { firebaseConfig } from './firebase-config.js';
 const $=id=>document.getElementById(id);
 const horses=[
-{name:'クロワデュノール',rating:97,style:'先行',speed:97,stamina:96,kick:94,start:95,mud:88,best:[2000,2500]},
-{name:'フォーエバーヤング',rating:97,style:'先行',speed:96,stamina:92,kick:95,start:96,mud:97,best:[1600,2100]},
-{name:'マスカレードボール',rating:96,style:'差し',speed:95,stamina:94,kick:99,start:89,mud:87,best:[1800,2400]},
-{name:'ミュージアムマイル',rating:94,style:'差し',speed:95,stamina:91,kick:97,start:90,mud:88,best:[1600,2200]},
-{name:'ダノンデサイル',rating:95,style:'先行',speed:94,stamina:98,kick:92,start:94,mud:91,best:[2000,2500]},
-{name:'レガレイラ',rating:94,style:'追込',speed:94,stamina:95,kick:99,start:84,mud:93,best:[2000,2500]},
-{name:'ジャンタルマンタル',rating:95,style:'先行',speed:99,stamina:85,kick:96,start:96,mud:87,best:[1400,1800]},
-{name:'メイショウタバル',rating:93,style:'逃げ',speed:95,stamina:93,kick:86,start:98,mud:96,best:[1800,2200]},
-{name:'ベラジオオペラ',rating:94,style:'先行',speed:95,stamina:92,kick:93,start:95,mud:90,best:[1800,2200]},
-{name:'ソウルラッシュ',rating:94,style:'差し',speed:96,stamina:86,kick:97,start:89,mud:97,best:[1400,1800]},
-{name:'チェルヴィニア',rating:93,style:'差し',speed:94,stamina:95,kick:96,start:88,mud:91,best:[1800,2400]},
-{name:'シンエンペラー',rating:93,style:'先行',speed:93,stamina:97,kick:91,start:94,mud:89,best:[2000,2500]},
-{name:'ジャスティンパレス',rating:93,style:'差し',speed:91,stamina:100,kick:93,start:87,mud:91,best:[2200,3200]},
-{name:'アーバンシック',rating:92,style:'差し',speed:91,stamina:99,kick:94,start:86,mud:90,best:[2200,3200]},
-{name:'ナムラクレア',rating:94,style:'差し',speed:99,stamina:79,kick:99,start:92,mud:96,best:[1000,1400]},
-{name:'サトノレーヴ',rating:94,style:'先行',speed:99,stamina:78,kick:96,start:97,mud:90,best:[1000,1400]},
-{name:'エンブロイダリー',rating:91,style:'先行',speed:94,stamina:89,kick:94,start:94,mud:87,best:[1400,2000]},
-{name:'パンジャタワー',rating:91,style:'先行',speed:96,stamina:83,kick:94,start:95,mud:88,best:[1200,1600]},
-{name:'エリキング',rating:91,style:'差し',speed:92,stamina:94,kick:96,start:88,mud:90,best:[1800,2400]},
-{name:'ショウヘイ',rating:91,style:'先行',speed:93,stamina:94,kick:92,start:94,mud:88,best:[1800,2400]}
+{name:'イクイノックス',rating:100,style:'先行',speed:100,stamina:99,kick:99,start:94,mud:92,best:[1800,2500]},
+{name:'ディープインパクト',rating:100,style:'追込',speed:100,stamina:98,kick:100,start:88,mud:90,best:[1800,3200]},
+{name:'オルフェーヴル',rating:99,style:'追込',speed:98,stamina:100,kick:99,start:83,mud:96,best:[2000,3200]},
+{name:'アーモンドアイ',rating:100,style:'差し',speed:100,stamina:94,kick:100,start:93,mud:90,best:[1600,2400]},
+{name:'キタサンブラック',rating:99,style:'逃げ',speed:96,stamina:100,kick:94,start:99,mud:93,best:[2000,3200]},
+{name:'コントレイル',rating:98,style:'差し',speed:98,stamina:97,kick:99,start:91,mud:89,best:[1800,3000]},
+{name:'ジェンティルドンナ',rating:98,style:'先行',speed:98,stamina:98,kick:97,start:95,mud:92,best:[1800,2500]},
+{name:'ウオッカ',rating:98,style:'差し',speed:99,stamina:93,kick:99,start:90,mud:90,best:[1600,2400]},
+{name:'ロードカナロア',rating:98,style:'先行',speed:100,stamina:80,kick:99,start:98,mud:94,best:[1000,1600]},
+{name:'エルコンドルパサー',rating:98,style:'先行',speed:97,stamina:98,kick:97,start:95,mud:97,best:[1600,2500]},
+{name:'テイエムオペラオー',rating:98,style:'先行',speed:95,stamina:100,kick:96,start:96,mud:95,best:[2000,3200]},
+{name:'ナリタブライアン',rating:98,style:'先行',speed:98,stamina:99,kick:98,start:94,mud:94,best:[1800,3200]},
+{name:'シンボリルドルフ',rating:98,style:'先行',speed:97,stamina:100,kick:96,start:97,mud:93,best:[2000,3200]},
+{name:'ミスターシービー',rating:96,style:'追込',speed:96,stamina:98,kick:99,start:82,mud:91,best:[1800,3200]},
+{name:'トウカイテイオー',rating:97,style:'先行',speed:98,stamina:96,kick:98,start:94,mud:91,best:[1800,2500]},
+{name:'スペシャルウィーク',rating:97,style:'差し',speed:96,stamina:99,kick:97,start:89,mud:92,best:[2000,3200]},
+{name:'グラスワンダー',rating:97,style:'先行',speed:98,stamina:96,kick:98,start:94,mud:95,best:[1600,2500]},
+{name:'サイレンススズカ',rating:97,style:'逃げ',speed:100,stamina:91,kick:96,start:100,mud:92,best:[1600,2200]},
+{name:'メジロマックイーン',rating:97,style:'先行',speed:94,stamina:100,kick:93,start:96,mud:96,best:[2200,3200]},
+{name:'ゴールドシップ',rating:97,style:'追込',speed:94,stamina:100,kick:97,start:77,mud:100,best:[2200,3200]},
+{name:'ブエナビスタ',rating:97,style:'差し',speed:98,stamina:96,kick:100,start:88,mud:91,best:[1600,2500]},
+{name:'ジャスタウェイ',rating:97,style:'差し',speed:100,stamina:91,kick:100,start:88,mud:93,best:[1600,2200]},
+{name:'モーリス',rating:97,style:'先行',speed:100,stamina:88,kick:99,start:95,mud:94,best:[1400,2000]},
+{name:'グランアレグリア',rating:98,style:'差し',speed:100,stamina:83,kick:100,start:91,mud:91,best:[1200,2000]},
+{name:'ドウデュース',rating:97,style:'差し',speed:98,stamina:97,kick:100,start:87,mud:90,best:[1600,2500]},
+{name:'リバティアイランド',rating:96,style:'差し',speed:98,stamina:96,kick:99,start:89,mud:90,best:[1600,2500]},
+{name:'ソダシ',rating:95,style:'先行',speed:97,stamina:89,kick:95,start:97,mud:94,best:[1400,2000]},
+{name:'デアリングタクト',rating:96,style:'差し',speed:96,stamina:96,kick:98,start:89,mud:95,best:[1600,2500]},
+{name:'ラヴズオンリーユー',rating:96,style:'差し',speed:96,stamina:96,kick:98,start:90,mud:91,best:[1800,2500]},
+{name:'クロノジェネシス',rating:97,style:'先行',speed:96,stamina:99,kick:96,start:95,mud:100,best:[1800,2500]},
+{name:'リスグラシュー',rating:97,style:'差し',speed:97,stamina:98,kick:99,start:88,mud:95,best:[1600,2500]},
+{name:'エフフォーリア',rating:96,style:'先行',speed:97,stamina:97,kick:97,start:94,mud:90,best:[1800,2500]},
+{name:'タイトルホルダー',rating:96,style:'逃げ',speed:94,stamina:100,kick:91,start:100,mud:96,best:[2200,3200]},
+{name:'サトノダイヤモンド',rating:96,style:'差し',speed:95,stamina:99,kick:97,start:89,mud:91,best:[2000,3200]},
+{name:'シュヴァルグラン',rating:95,style:'先行',speed:93,stamina:100,kick:94,start:93,mud:93,best:[2200,3200]},
+{name:'エピファネイア',rating:96,style:'先行',speed:96,stamina:99,kick:96,start:94,mud:96,best:[2000,3200]},
+{name:'キズナ',rating:95,style:'差し',speed:96,stamina:97,kick:98,start:88,mud:92,best:[1800,2500]},
+{name:'キングカメハメハ',rating:97,style:'先行',speed:99,stamina:94,kick:98,start:96,mud:93,best:[1600,2400]},
+{name:'ハーツクライ',rating:96,style:'差し',speed:96,stamina:99,kick:98,start:88,mud:94,best:[2000,3200]},
+{name:'ゼンノロブロイ',rating:95,style:'先行',speed:95,stamina:99,kick:95,start:94,mud:91,best:[2000,3200]},
+{name:'アドマイヤムーン',rating:95,style:'差し',speed:97,stamina:95,kick:98,start:89,mud:94,best:[1600,2400]},
+{name:'ダイワスカーレット',rating:97,style:'逃げ',speed:98,stamina:96,kick:96,start:100,mud:94,best:[1600,2500]},
+{name:'メイショウサムソン',rating:95,style:'先行',speed:94,stamina:100,kick:93,start:96,mud:98,best:[2000,3200]},
+{name:'ヴィクトワールピサ',rating:96,style:'先行',speed:96,stamina:97,kick:96,start:95,mud:96,best:[1800,2500]},
+{name:'エイシンフラッシュ',rating:95,style:'差し',speed:96,stamina:95,kick:99,start:88,mud:93,best:[1800,2500]},
+{name:'フェノーメノ',rating:95,style:'先行',speed:94,stamina:100,kick:94,start:94,mud:91,best:[2200,3200]},
+{name:'ジャングルポケット',rating:95,style:'差し',speed:96,stamina:98,kick:98,start:88,mud:93,best:[2000,2500]},
+{name:'マンハッタンカフェ',rating:95,style:'差し',speed:93,stamina:100,kick:96,start:86,mud:92,best:[2200,3200]},
+{name:'アグネスタキオン',rating:96,style:'先行',speed:99,stamina:94,kick:99,start:95,mud:93,best:[1600,2400]},
+{name:'クロフネ',rating:97,style:'先行',speed:99,stamina:92,kick:98,start:97,mud:100,best:[1400,2100]},
+{name:'アグネスデジタル',rating:96,style:'差し',speed:98,stamina:90,kick:98,start:90,mud:100,best:[1200,2000]},
+{name:'カネヒキリ',rating:95,style:'先行',speed:96,stamina:94,kick:94,start:96,mud:100,best:[1400,2100]},
+{name:'ヴァーミリアン',rating:95,style:'先行',speed:95,stamina:97,kick:94,start:95,mud:100,best:[1600,2400]},
+{name:'ホッコータルマエ',rating:95,style:'先行',speed:94,stamina:98,kick:92,start:96,mud:100,best:[1600,2400]},
+{name:'コパノリッキー',rating:95,style:'逃げ',speed:97,stamina:94,kick:91,start:100,mud:99,best:[1400,2100]},
+{name:'クリソベリル',rating:96,style:'先行',speed:96,stamina:96,kick:95,start:96,mud:100,best:[1600,2100]},
+{name:'レモンポップ',rating:97,style:'先行',speed:99,stamina:88,kick:97,start:98,mud:100,best:[1200,1800]},
+{name:'フォーエバーヤング',rating:98,style:'先行',speed:98,stamina:96,kick:98,start:97,mud:100,best:[1600,2100]},
+{name:'オジュウチョウサン',rating:95,style:'先行',speed:89,stamina:100,kick:91,start:96,mud:100,best:[2500,4300]},
+{name:'タイキシャトル',rating:97,style:'先行',speed:100,stamina:86,kick:99,start:98,mud:96,best:[1200,1600]},
+{name:'サクラバクシンオー',rating:96,style:'逃げ',speed:100,stamina:78,kick:96,start:100,mud:92,best:[1000,1400]},
+{name:'デュランダル',rating:95,style:'追込',speed:99,stamina:81,kick:100,start:78,mud:90,best:[1000,1600]},
+{name:'カレンチャン',rating:95,style:'先行',speed:99,stamina:79,kick:96,start:98,mud:96,best:[1000,1400]},
+{name:'ストレイトガール',rating:94,style:'差し',speed:98,stamina:80,kick:98,start:91,mud:94,best:[1000,1600]},
+{name:'ミッキーアイル',rating:94,style:'逃げ',speed:99,stamina:82,kick:94,start:100,mud:91,best:[1200,1600]},
+{name:'ファインニードル',rating:94,style:'先行',speed:98,stamina:80,kick:95,start:97,mud:97,best:[1000,1400]},
+{name:'ダノンスマッシュ',rating:94,style:'先行',speed:98,stamina:81,kick:96,start:96,mud:93,best:[1000,1400]},
+{name:'ナランフレグ',rating:92,style:'追込',speed:96,stamina:82,kick:99,start:79,mud:97,best:[1000,1400]},
+{name:'ナムラクレア',rating:95,style:'差し',speed:99,stamina:80,kick:99,start:92,mud:97,best:[1000,1400]},
+{name:'サトノレーヴ',rating:95,style:'先行',speed:99,stamina:80,kick:96,start:98,mud:92,best:[1000,1400]},
+{name:'ノースフライト',rating:95,style:'先行',speed:99,stamina:86,kick:98,start:96,mud:91,best:[1400,1800]},
+{name:'ニホンピロウイナー',rating:95,style:'先行',speed:99,stamina:84,kick:96,start:97,mud:92,best:[1400,1800]},
+{name:'ダイワメジャー',rating:96,style:'先行',speed:98,stamina:91,kick:95,start:98,mud:95,best:[1400,2000]},
+{name:'ハットトリック',rating:94,style:'差し',speed:98,stamina:86,kick:99,start:87,mud:90,best:[1400,1800]},
+{name:'ロゴタイプ',rating:94,style:'先行',speed:96,stamina:92,kick:94,start:97,mud:94,best:[1600,2000]},
+{name:'インディチャンプ',rating:95,style:'差し',speed:99,stamina:87,kick:98,start:90,mud:91,best:[1400,1800]},
+{name:'ソングライン',rating:96,style:'差し',speed:99,stamina:88,kick:99,start:89,mud:94,best:[1400,1800]},
+{name:'セリフォス',rating:95,style:'差し',speed:99,stamina:86,kick:99,start:88,mud:90,best:[1400,1800]},
+{name:'ジャンタルマンタル',rating:96,style:'先行',speed:100,stamina:87,kick:97,start:97,mud:89,best:[1400,1800]},
+{name:'ソウルラッシュ',rating:95,style:'差し',speed:98,stamina:88,kick:98,start:89,mud:100,best:[1400,1800]},
+{name:'エアグルーヴ',rating:96,style:'先行',speed:97,stamina:96,kick:97,start:94,mud:92,best:[1800,2500]},
+{name:'ヒシアマゾン',rating:95,style:'差し',speed:96,stamina:96,kick:98,start:88,mud:95,best:[1600,2500]},
+{name:'ファビラスラフイン',rating:94,style:'先行',speed:96,stamina:94,kick:96,start:94,mud:90,best:[1600,2400]},
+{name:'スティルインラブ',rating:94,style:'差し',speed:95,stamina:94,kick:97,start:89,mud:92,best:[1600,2500]},
+{name:'アパパネ',rating:95,style:'先行',speed:96,stamina:94,kick:96,start:95,mud:92,best:[1600,2400]},
+{name:'メジロドーベル',rating:95,style:'差し',speed:95,stamina:96,kick:97,start:87,mud:93,best:[1600,2500]},
+{name:'スイープトウショウ',rating:95,style:'追込',speed:95,stamina:95,kick:100,start:80,mud:94,best:[1600,2500]},
+{name:'ショウナンパンドラ',rating:95,style:'差し',speed:95,stamina:96,kick:98,start:87,mud:93,best:[1800,2500]},
+{name:'マリアライト',rating:94,style:'差し',speed:93,stamina:98,kick:96,start:86,mud:100,best:[2000,2500]},
+{name:'スターズオンアース',rating:96,style:'差し',speed:97,stamina:97,kick:99,start:89,mud:92,best:[1600,2500]},
+{name:'チェルヴィニア',rating:95,style:'差し',speed:96,stamina:97,kick:98,start:88,mud:92,best:[1800,2500]},
+{name:'レガレイラ',rating:95,style:'追込',speed:96,stamina:97,kick:100,start:83,mud:95,best:[1800,2500]},
+{name:'クロワデュノール',rating:97,style:'先行',speed:98,stamina:98,kick:96,start:96,mud:90,best:[1800,2500]},
+{name:'ダノンデサイル',rating:96,style:'先行',speed:96,stamina:99,kick:94,start:95,mud:92,best:[2000,2500]},
+{name:'ミュージアムマイル',rating:95,style:'差し',speed:97,stamina:92,kick:98,start:90,mud:90,best:[1600,2200]},
+{name:'マスカレードボール',rating:96,style:'差し',speed:96,stamina:96,kick:100,start:88,mud:89,best:[1800,2400]},
+{name:'エリキング',rating:92,style:'差し',speed:93,stamina:95,kick:97,start:87,mud:91,best:[1800,2400]},
+{name:'ショウヘイ',rating:92,style:'先行',speed:94,stamina:95,kick:93,start:95,mud:89,best:[1800,2400]},
+{name:'メイショウタバル',rating:94,style:'逃げ',speed:96,stamina:94,kick:88,start:100,mud:97,best:[1800,2400]},
+{name:'ベラジオオペラ',rating:95,style:'先行',speed:96,stamina:94,kick:95,start:97,mud:91,best:[1800,2200]},
+{name:'ジャスティンパレス',rating:95,style:'差し',speed:93,stamina:100,kick:95,start:87,mud:92,best:[2200,3200]},
+{name:'アーバンシック',rating:94,style:'差し',speed:92,stamina:99,kick:96,start:86,mud:91,best:[2200,3200]},
+{name:'シンエンペラー',rating:94,style:'先行',speed:94,stamina:98,kick:93,start:95,mud:90,best:[2000,2500]},
+{name:'ドゥレッツァ',rating:95,style:'先行',speed:94,stamina:100,kick:95,start:94,mud:91,best:[2200,3200]},
+{name:'タスティエーラ',rating:94,style:'先行',speed:94,stamina:97,kick:94,start:95,mud:91,best:[2000,2500]},
+{name:'シャフリヤール',rating:95,style:'差し',speed:96,stamina:96,kick:98,start:88,mud:89,best:[1800,2500]},
+{name:'パンサラッサ',rating:95,style:'逃げ',speed:98,stamina:92,kick:89,start:100,mud:96,best:[1600,2200]},
+{name:'ジャックドール',rating:94,style:'逃げ',speed:96,stamina:94,kick:91,start:99,mud:92,best:[1800,2200]},
+{name:'ポタジェ',rating:92,style:'先行',speed:92,stamina:95,kick:91,start:95,mud:91,best:[1800,2200]},
+{name:'ジオグリフ',rating:93,style:'先行',speed:94,stamina:93,kick:93,start:96,mud:96,best:[1600,2200]},
+{name:'ドリームジャーニー',rating:95,style:'追込',speed:94,stamina:97,kick:100,start:78,mud:94,best:[1800,2500]},
+{name:'ナカヤマフェスタ',rating:94,style:'差し',speed:93,stamina:98,kick:96,start:87,mud:98,best:[2000,2500]},
+{name:'マツリダゴッホ',rating:94,style:'先行',speed:94,stamina:96,kick:93,start:96,mud:92,best:[2000,2500]},
+{name:'ラッキーライラック',rating:95,style:'先行',speed:96,stamina:95,kick:96,start:95,mud:92,best:[1600,2400]},
+{name:'サートゥルナーリア',rating:96,style:'先行',speed:98,stamina:94,kick:98,start:94,mud:91,best:[1800,2400]},
+{name:'ワールドプレミア',rating:94,style:'差し',speed:92,stamina:100,kick:95,start:85,mud:91,best:[2200,3200]},
+{name:'フィエールマン',rating:95,style:'差し',speed:93,stamina:100,kick:97,start:86,mud:92,best:[2200,3200]},
+{name:'ディープボンド',rating:93,style:'先行',speed:91,stamina:100,kick:91,start:96,mud:100,best:[2200,3200]},
+{name:'テーオーロイヤル',rating:94,style:'先行',speed:92,stamina:100,kick:93,start:95,mud:95,best:[2400,3400]},
+{name:'ブローザホーン',rating:94,style:'差し',speed:92,stamina:99,kick:97,start:85,mud:100,best:[2200,3200]}
 ];
 const venues={
 '東京':{turn:'左',shape:'oval',straight:526},'中山':{turn:'右',shape:'oval',straight:310},'阪神':{turn:'右',shape:'oval',straight:474},'京都':{turn:'右',shape:'oval',straight:404},'中京':{turn:'左',shape:'oval',straight:413},'新潟':{turn:'左',shape:'oval',straight:659}
@@ -115,61 +215,61 @@ function updateChosenHorseBanner(){
 function runSimulation(){
  const canvas=$('track'),ctx=canvas.getContext('2d'),D=state.race.distance,rnd=seeded(state.seed);
  const DISPLAY_DURATION=30,officialSecs=estimateRaceSeconds(D);
- let wallStart=null,finished=false,lastCall=-1,stripNodes=null;
+ let wallStart=null,previousTs=null,finished=false,lastCall=-1,stripNodes=null;
  // 馬券の選択は結果に一切影響させない。能力・適性・当日の乱数だけで着順を決める。
  const runners=state.field.map((h,i)=>{
   const ability=(h.winProb||1/state.field.length)*100;
   const dayForm=(rnd()-.5)*18;
   const score=ability+dayForm+(effective(h,'speed')-93)*.45+(effective(h,'stamina')-92)*.20;
-  const styleBias=h.style==='逃げ'?.028:h.style==='先行'?.014:h.style==='差し'?-0.008:-0.018;
+  const styleBias=h.style==='逃げ'?.034:h.style==='先行'?.018:h.style==='差し'?-0.010:-0.022;
   return {...h,p:0,displayP:0,lane:i,finish:null,score,
-   phase1:rnd()*Math.PI*2,phase2:rnd()*Math.PI*2,
-   amp1:.025+rnd()*.023,amp2:.012+rnd()*.018,
+   phase1:rnd()*Math.PI*2,phase2:rnd()*Math.PI*2,phase3:rnd()*Math.PI*2,
+   amp1:.034+rnd()*.026,amp2:.018+rnd()*.022,amp3:.010+rnd()*.014,
    styleBias,currentKmh:0};
  });
  const ranked=[...runners].sort((a,b)=>b.score-a.score);
  ranked.forEach((h,rank)=>{
-  // 全馬が約30秒でゴール。僅差を増やしてゴール前まで競り合いやすくする。
-  h.finishWall=29.15+rank*.075+rnd()*.055;
-  h.officialFinish=officialSecs+rank*.12+rnd()*.09;
+  h.finishWall=29.20+rank*.052+rnd()*.035;
+  h.officialFinish=officialSecs+rank*.10+rnd()*.075;
   h.finalRank=rank;
  });
  $('liveTitle').textContent=state.race.name;
  $('liveConditions').textContent=`${state.venue} 芝${D}m・${state.going}・約30秒レース`;
  updateChosenHorseBanner();
+ stripNodes=drawPositionStrip(runners,null);
 
  function smoothstep(x){x=Math.max(0,Math.min(1,x));return x*x*(3-2*x)}
  function frame(ts){
-  if(wallStart===null)wallStart=ts;
+  if(wallStart===null){wallStart=ts;previousTs=ts}
+  const dt=Math.min(.05,Math.max(.001,(ts-previousTs)/1000));previousTs=ts;
   const wall=Math.min(32,(ts-wallStart)/1000);
   runners.forEach(h=>{
-   if(h.finish!==null){h.p=1;h.displayP+=(1-h.displayP)*.24;return}
+   if(h.finish!==null){h.p=1;h.displayP+=(1-h.displayP)*(1-Math.exp(-10*dt));return}
    const t=Math.max(0,Math.min(1,wall/h.finishWall));
    const envelope=Math.sin(Math.PI*t);
-   // 複数の長い波で、瞬間移動ではなく加速と減速による大きな抜き差しを作る。
-   const battleWave=(Math.sin(t*Math.PI*6+h.phase1)*h.amp1+
-                     Math.sin(t*Math.PI*10+h.phase2)*h.amp2)*envelope;
-   const earlyStyle=h.style==='逃げ'?h.styleBias*(1-smoothstep(t/.55))*envelope:
+   const battleWave=(Math.sin(t*Math.PI*7+h.phase1)*h.amp1+
+                     Math.sin(t*Math.PI*13+h.phase2)*h.amp2+
+                     Math.sin(t*Math.PI*19+h.phase3)*h.amp3)*envelope;
+   const earlyStyle=h.style==='逃げ'?h.styleBias*(1-smoothstep(t/.60))*envelope:
                     h.style==='先行'?h.styleBias*(1-t)*envelope:0;
-   const lateStyle=h.style==='差し'?.026*smoothstep((t-.35)/.6)*envelope:
-                   h.style==='追込'?.040*smoothstep((t-.48)/.48)*envelope:0;
-   // 最後の15%で予定着順へ自然に収束させ、ゴール判定と表示順位を一致させる。
-   const settle=smoothstep((t-.84)/.16);
-   const rankOffset=((runners.length-1-h.finalRank)-(runners.length-1)/2)*.0018*settle;
+   const lateStyle=h.style==='差し'?.034*smoothstep((t-.34)/.58)*envelope:
+                   h.style==='追込'?.052*smoothstep((t-.45)/.50)*envelope:0;
+   const settle=smoothstep((t-.86)/.14);
+   const rankOffset=((runners.length-1-h.finalRank)-(runners.length-1)/2)*.0017*settle;
    let target=t+battleWave+earlyStyle+lateStyle+rankOffset;
    target=Math.max(0,Math.min(.9995,target));
-   // 逆走はさせず、フレーム間補間で常に滑らかに追従。
-   target=Math.max(h.p,target);
-   h.p=target;
-   h.displayP+=(h.p-h.displayP)*.20;
-   const surge=(h.p-h.displayP)*520;
-   const phaseSpeed=54+8*Math.sin(Math.PI*t)+(effective(h,'speed')-93)*.30+surge;
-   h.currentKmh=Math.max(47,Math.min(72,phaseSpeed));
+   // 数字が飛ばないよう、時間ベースの追従速度で補間する。
+   h.p=Math.max(h.p,target);
+   const follow=1-Math.exp(-7.5*dt);
+   h.displayP+=Math.max(0,h.p-h.displayP)*follow;
+   const surge=Math.max(0,(h.p-h.displayP))*430;
+   const phaseSpeed=53+9*Math.sin(Math.PI*t)+(effective(h,'speed')-93)*.30+surge;
+   h.currentKmh=Math.max(46,Math.min(73,phaseSpeed));
    if(wall>=h.finishWall){h.p=1;h.finish=h.officialFinish}
   });
   const order=[...runners].sort((a,b)=>b.displayP-a.displayP || b.score-a.score);
   drawCourse(ctx,runners.map(h=>({...h,p:h.displayP})),order[0].displayP,false);
-  stripNodes=drawPositionStrip(runners,stripNodes);
+  drawPositionStrip(runners,stripNodes);
   const leaderProgress=order[0].displayP;
   $('remaining').textContent=`${Math.max(0,Math.round(D*(1-leaderProgress)/50)*50)}m`;
   $('leader').textContent=`先頭：${order[0].number}番 ${order[0].name}`;
@@ -198,8 +298,8 @@ function drawPositionStrip(runners,nodes){
  }
  runners.forEach((h,i)=>{
   const progress=Math.max(0,Math.min(1,h.displayP??h.p));
-  // leftを親要素基準の%で更新することで、STARTに固定される不具合を解消。
-  nodes[i].style.left=`${3+progress*94}%`;
+  // CSSのleft固定を使わず、transformだけを毎フレーム更新する。
+  nodes[i].style.setProperty('--race-x',`${7+progress*86}%`);
   nodes[i].style.zIndex=String(10+Math.round(progress*100));
   nodes[i].title=`進行率${Math.round(progress*100)}%`;
  });
