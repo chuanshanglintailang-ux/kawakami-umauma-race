@@ -190,6 +190,7 @@ function cleanupPeer(){try{if(state.hostConn)state.hostConn.close();state.connec
 let audioContext=null;
 let audioKeepAlive=null;
 let raceRedraw=null;
+let raceResizePending=false;
 function getAudioContext(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;if(!audioContext)audioContext=new C();return audioContext}catch(e){return null}}
 async function unlockAudio(){try{const ac=getAudioContext();if(!ac)return false;if(ac.state==='suspended')await ac.resume();if(ac.state!=='running')return false;const o=ac.createOscillator(),g=ac.createGain();g.gain.value=.00001;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+.02);if(!audioKeepAlive){const keep=ac.createOscillator(),kg=ac.createGain();keep.type='sine';keep.frequency.value=22;kg.gain.value=.000001;keep.connect(kg);kg.connect(ac.destination);keep.start();audioKeepAlive={keep,kg}}return true}catch(e){console.warn('audio unlock failed',e);return false}}
 function fanfareTheme(name){
@@ -227,24 +228,30 @@ function playGateBang(){
  const src=ac.createBufferSource(),hp=ac.createBiquadFilter();src.buffer=noise;hp.type='highpass';hp.frequency.value=650;src.connect(hp);hp.connect(master);src.start(t);
  const o=ac.createOscillator(),g=ac.createGain();o.type='triangle';o.frequency.setValueAtTime(145,t);o.frequency.exponentialRampToValueAtTime(62,t+.13);g.gain.setValueAtTime(.7,t);g.gain.exponentialRampToValueAtTime(.0001,t+.18);o.connect(g);g.connect(master);o.start(t);o.stop(t+.2)
 }
-function drawRaceScene(ctx,runners,{gateOpen=0,showGate=false}={}){
- const w=ctx.canvas.width,h=ctx.canvas.height;ctx.clearRect(0,0,w,h);
- const sky=ctx.createLinearGradient(0,0,0,h*.45);sky.addColorStop(0,'#82c9ff');sky.addColorStop(1,'#e8f5ff');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h*.35);
- ctx.fillStyle='#1f7c42';ctx.fillRect(0,h*.35,w,h*.65);ctx.fillStyle='#c69a61';ctx.fillRect(0,h*.48,w,h*.47);
- for(let i=0;i<=runners.length;i++){const y=h*.48+i*(h*.47/runners.length);ctx.strokeStyle='#ffffff88';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
- const start=w*.10,goal=w*.93,trackW=goal-start;
- ctx.fillStyle='#ffe34f';ctx.fillRect(start-5,h*.42,10,h*.55);
- for(let y=h*.42;y<h*.97;y+=20){ctx.fillStyle=((y/20)|0)%2?'#fff':'#111';ctx.fillRect(goal-7,y,14,20)}
- const horseScale=Math.max(.75,Math.min(1.25,w/1050));
- const gateHorseX=start-(38*horseScale); // 鼻先までスタートラインの手前に収める
- runners.forEach((r,i)=>{const lane=Number.isFinite(r.lane)?r.lane:i;const laneY=h*.48+(lane+.5)*(h*.47/runners.length);const x=gateHorseX+trackW*Math.max(0,r.display||0);drawHorse(ctx,x,laneY,r,lane)});
+function getRaceBackground(canvas,runners){
+ const key=`${canvas.width}x${canvas.height}:${runners.length}`;
+ if(canvas._raceBg?.key===key)return canvas._raceBg.canvas;
+ const bg=document.createElement('canvas');bg.width=canvas.width;bg.height=canvas.height;
+ const c=bg.getContext('2d'),w=bg.width,h=bg.height;
+ const sky=c.createLinearGradient(0,0,0,h*.45);sky.addColorStop(0,'#82c9ff');sky.addColorStop(1,'#e8f5ff');c.fillStyle=sky;c.fillRect(0,0,w,h*.35);
+ c.fillStyle='#1f7c42';c.fillRect(0,h*.35,w,h*.65);c.fillStyle='#c69a61';c.fillRect(0,h*.48,w,h*.47);
+ c.strokeStyle='#ffffff88';c.lineWidth=2;for(let i=0;i<=runners.length;i++){const y=h*.48+i*(h*.47/runners.length);c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke()}
+ const start=w*.10,goal=w*.93;c.fillStyle='#ffe34f';c.fillRect(start-5,h*.42,10,h*.55);
+ for(let y=h*.42;y<h*.97;y+=20){c.fillStyle=((y/20)|0)%2?'#fff':'#111';c.fillRect(goal-7,y,14,20)}
+ c.fillStyle='#103d22';c.fillRect(0,h*.95,w,h*.05);c.fillStyle='#fff';c.font=`700 ${Math.max(16,w*.018)}px sans-serif`;c.fillText('START',start-30,h*.44);c.fillText('GOAL',goal-28,h*.44);
+ canvas._raceBg={key,canvas:bg};return bg
+}
+function drawRaceScene(ctx,runners,{gateOpen=0,showGate=false,animTime=performance.now()}={}){
+ const w=ctx.canvas.width,h=ctx.canvas.height;ctx.clearRect(0,0,w,h);ctx.drawImage(getRaceBackground(ctx.canvas,runners),0,0);
+ const start=w*.10,goal=w*.93,trackW=goal-start,horseScale=Math.max(.75,Math.min(1.25,w/1050));
+ const gateHorseX=start-(38*horseScale);
+ runners.forEach((r,i)=>{const lane=Number.isFinite(r.lane)?r.lane:i;const laneY=h*.48+(lane+.5)*(h*.47/runners.length);const x=gateHorseX+trackW*Math.max(0,r.display||0);drawHorse(ctx,x,laneY,r,lane,animTime)});
  if(showGate){
    const stallW=Math.max(28,w*.048),gateX=gateHorseX-stallW*.28,gateTop=h*.46,gateBottom=h*.95;
    ctx.fillStyle='#c7d0ca';ctx.fillRect(gateX-stallW*.55,gateTop,stallW*1.18,gateBottom-gateTop);ctx.strokeStyle='#eef4f0';ctx.lineWidth=3;ctx.strokeRect(gateX-stallW*.55,gateTop,stallW*1.18,gateBottom-gateTop);
    const ease=1-Math.pow(1-Math.max(0,Math.min(1,gateOpen)),3),doorShift=ease*stallW*.92;
    ctx.strokeStyle='#7e8c84';ctx.lineWidth=Math.max(3,w*.006);for(let k=-2;k<=2;k++){const x=gateX+k*stallW*.12;ctx.beginPath();ctx.moveTo(x-doorShift,gateTop);ctx.lineTo(x-doorShift,gateBottom);ctx.stroke();ctx.beginPath();ctx.moveTo(x+doorShift,gateTop);ctx.lineTo(x+doorShift,gateBottom);ctx.stroke()}
  }
- ctx.fillStyle='#103d22';ctx.fillRect(0,h*.95,w,h*.05);ctx.fillStyle='#fff';ctx.font=`700 ${Math.max(16,w*.018)}px sans-serif`;ctx.fillText('START',start-30,h*.44);ctx.fillText('GOAL',goal-28,h*.44)
 }
 function drawPreRaceGate(ctx,runners,open=0){drawRaceScene(ctx,runners,{gateOpen:open,showGate:true})}
 
@@ -417,7 +424,7 @@ function runRace(payload,token=state.navToken){
  raceRedraw=()=>drawRaceScene(ctx,runners,{showGate:false});
  $('whipPanel').hidden=true;
  const lastFinish=Math.max(...runners.map(r=>r.finishWall));
- let sequenceStart=null,raceStart=null,lastFrame=null,lastCall=-1,done=false,lastLeader=null;
+ let sequenceStart=null,raceStart=null,lastFrame=null,lastCall=-1,done=false,lastLeader=null,lastUi=0,lastProgress=0,lastLeaderText='';
  function frame(ts){
   if(token!==state.navToken)return;
   if(sequenceStart===null)sequenceStart=ts;
@@ -426,7 +433,7 @@ function runRace(payload,token=state.navToken){
   if(sequence<1.45){
    const eased=launch*launch*(3-2*launch);
    runners.forEach(h=>h.display=.0035*eased);
-   drawRaceScene(ctx,runners,{gateOpen,showGate:true});updateProgress(dots,runners);$('remaining').textContent=`${state.race.distance}m`;requestAnimationFrame(frame);return
+   drawRaceScene(ctx,runners,{gateOpen,showGate:true,animTime:ts});if(ts-lastProgress>66){updateProgress(dots,runners);lastProgress=ts}if(ts-lastUi>120){$('remaining').textContent=`${state.race.distance}m`;lastUi=ts}requestAnimationFrame(frame);return
   }
   if(raceStart===null){raceStart=ts;lastFrame=ts;$('commentary').textContent='スタート！ 全馬が滑らかに加速していきます。'}
   const wall=(ts-raceStart)/1000;state.raceRuntime.wall=wall;
@@ -447,12 +454,15 @@ function runRace(payload,token=state.navToken){
    if(sampled-h.display>.025)h.display+=Math.min(.004,(sampled-h.display)*.08);
    if(!h.finish&&h.display>=1){h.finish=true;h.actualFinish=wall;h.display=Math.max(1,h.display)}
   });
-  drawRaceScene(ctx,runners,{showGate:false});updateProgress(dots,runners);
+  drawRaceScene(ctx,runners,{showGate:false,animTime:ts});if(ts-lastProgress>50){updateProgress(dots,runners);lastProgress=ts}
   const order=[...runners].sort((a,b)=>b.display-a.display||a.finishWall-b.finishWall),lead=order[0],control=controlledRunner(runners);
-  $('clock').textContent=`0:${Math.min(59.9,wall).toFixed(1).padStart(4,'0')}`;
-  $('remaining').textContent=`${Math.max(0,Math.round(state.race.distance*(1-Math.min(1,lead.display))))}m`;
-  const leaderColor=COLORS[(lead.number-1)%COLORS.length];$('leaderText').innerHTML=`<span class="leader-num" style="background:${leaderColor};color:${lead.number===2?'#fff':'#111'}">${lead.number}</span><span>先頭 ${escapeHtml(lead.name)}</span>`;
-  const whipReady=(state.mode==='host'||state.mode==='join')&&control&&!control.finish&&control.display>=.76;$('whipPanel').hidden=!whipReady;if(whipReady)$('whipHorse').textContent=`${control.number}番 ${control.name}を追う！`;
+  if(ts-lastUi>100){
+   $('clock').textContent=`0:${Math.min(59.9,wall).toFixed(1).padStart(4,'0')}`;
+   $('remaining').textContent=`${Math.max(0,Math.round(state.race.distance*(1-Math.min(1,lead.display))))}m`;
+   const leaderText=`${lead.number}:${lead.name}`;if(leaderText!==lastLeaderText){const leaderColor=COLORS[(lead.number-1)%COLORS.length];$('leaderText').innerHTML=`<span class="leader-num" style="background:${leaderColor};color:${lead.number===2?'#fff':'#111'}">${lead.number}</span><span>先頭 ${escapeHtml(lead.name)}</span>`;lastLeaderText=leaderText}
+   const whipReady=(state.mode==='host'||state.mode==='join')&&control&&!control.finish&&control.display>=.76;$('whipPanel').hidden=!whipReady;if(whipReady&&$('whipHorse').textContent!==`${control.number}番 ${control.name}を追う！`)$('whipHorse').textContent=`${control.number}番 ${control.name}を追う！`;
+   lastUi=ts
+  }
   const call=Math.floor(wall/2.8);
   const remaining=Math.max(0,state.race.distance*(1-Math.min(1,lead.display)));
   const leaderChanged=lastLeader!==null&&lastLeader!==lead.number;lastLeader=lead.number;
@@ -487,9 +497,9 @@ function raceDramaOffset(r,t){
  const fade=r.fadePower*smooth((t-r.fadeAt)/Math.max(.08,1-r.fadeAt));
  return phase1+surge1+surge2-fade
 }
-function resizeCanvas(canvas){const dpr=Math.min(2,devicePixelRatio||1),rect=canvas.getBoundingClientRect();canvas.width=Math.max(800,Math.round(rect.width*dpr));canvas.height=Math.max(520,Math.round(rect.height*dpr))}
+function resizeCanvas(canvas){const rect=canvas.getBoundingClientRect(),mobile=matchMedia('(max-width: 700px)').matches,dpr=Math.min(mobile?1.35:1.75,devicePixelRatio||1),w=Math.max(640,Math.round(rect.width*dpr)),h=Math.max(420,Math.round(rect.height*dpr));if(canvas.width===w&&canvas.height===h)return false;canvas.width=w;canvas.height=h;canvas._raceBg=null;return true}
 function drawTrack(ctx,runners){const w=ctx.canvas.width,h=ctx.canvas.height;ctx.clearRect(0,0,w,h);const sky=ctx.createLinearGradient(0,0,0,h*.45);sky.addColorStop(0,'#82c9ff');sky.addColorStop(1,'#e8f5ff');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h*.35);ctx.fillStyle='#1f7c42';ctx.fillRect(0,h*.35,w,h*.65);ctx.fillStyle='#c69a61';ctx.fillRect(0,h*.48,w,h*.47);for(let i=0;i<=runners.length;i++){const y=h*.48+i*(h*.47/runners.length);ctx.strokeStyle='#ffffff88';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}const start=w*.07,goal=w*.93;ctx.fillStyle='#ffe34f';ctx.fillRect(start-5,h*.42,10,h*.55);for(let y=h*.42;y<h*.97;y+=20){ctx.fillStyle=((y/20)|0)%2?'#fff':'#111';ctx.fillRect(goal-7,y,14,20)}runners.forEach((r,i)=>{const lane=Number.isFinite(r.lane)?r.lane:i;const laneY=h*.48+(lane+.5)*(h*.47/runners.length),x=start+(goal-start)*r.display;drawHorse(ctx,x,laneY,r,lane)});ctx.fillStyle='#103d22';ctx.fillRect(0,h*.95,w,h*.05);ctx.fillStyle='#fff';ctx.font=`700 ${Math.max(16,w*.018)}px sans-serif`;ctx.fillText('START',start-30,h*.44);ctx.fillText('GOAL',goal-28,h*.44)}
-function drawHorse(ctx,x,y,r,i){const scale=Math.max(.75,Math.min(1.25,ctx.canvas.width/1050));ctx.save();ctx.translate(x,y);if(r.isSelected){ctx.save();ctx.strokeStyle='#ffe45b';ctx.shadowColor='#ffe45b';ctx.shadowBlur=14*scale;ctx.lineWidth=4*scale;ctx.beginPath();ctx.ellipse(0,-3*scale,40*scale,30*scale,0,0,Math.PI*2);ctx.stroke();ctx.restore()}ctx.fillStyle='#4b2c18';ctx.beginPath();ctx.ellipse(0,0,25*scale,12*scale,0,0,Math.PI*2);ctx.fill();ctx.fillRect(13*scale,-9*scale,17*scale,8*scale);ctx.beginPath();ctx.arc(29*scale,-9*scale,7*scale,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#2f1b10';ctx.lineWidth=4*scale;const phase=performance.now()/80+i;for(const dx of [-13,10]){ctx.beginPath();ctx.moveTo(dx*scale,8*scale);ctx.lineTo((dx+Math.sin(phase)*8)*scale,24*scale);ctx.stroke()}ctx.fillStyle=COLORS[(r.number-1)%COLORS.length];ctx.beginPath();ctx.arc(-1*scale,-15*scale,10*scale,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle=r.number===2?'#fff':'#111';ctx.font=`900 ${12*scale}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(r.number,-1*scale,-15*scale);if(r.whipFlash&&performance.now()<r.whipFlash){ctx.strokeStyle='#ffe45b';ctx.lineWidth=4*scale;ctx.beginPath();ctx.moveTo(-8*scale,-25*scale);ctx.lineTo(12*scale,-38*scale);ctx.stroke()}ctx.restore()}
+function drawHorse(ctx,x,y,r,i,animTime=performance.now()){const scale=Math.max(.75,Math.min(1.25,ctx.canvas.width/1050));ctx.save();ctx.translate(x,y);if(r.isSelected){ctx.save();ctx.strokeStyle='#ffe45b';ctx.shadowColor='#ffe45b';ctx.shadowBlur=14*scale;ctx.lineWidth=4*scale;ctx.beginPath();ctx.ellipse(0,-3*scale,40*scale,30*scale,0,0,Math.PI*2);ctx.stroke();ctx.restore()}ctx.fillStyle='#4b2c18';ctx.beginPath();ctx.ellipse(0,0,25*scale,12*scale,0,0,Math.PI*2);ctx.fill();ctx.fillRect(13*scale,-9*scale,17*scale,8*scale);ctx.beginPath();ctx.arc(29*scale,-9*scale,7*scale,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#2f1b10';ctx.lineWidth=4*scale;const phase=animTime/80+i;for(const dx of [-13,10]){ctx.beginPath();ctx.moveTo(dx*scale,8*scale);ctx.lineTo((dx+Math.sin(phase)*8)*scale,24*scale);ctx.stroke()}ctx.fillStyle=COLORS[(r.number-1)%COLORS.length];ctx.beginPath();ctx.arc(-1*scale,-15*scale,10*scale,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle=r.number===2?'#fff':'#111';ctx.font=`900 ${12*scale}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(r.number,-1*scale,-15*scale);if(r.whipFlash&&animTime<r.whipFlash){ctx.strokeStyle='#ffe45b';ctx.lineWidth=4*scale;ctx.beginPath();ctx.moveTo(-8*scale,-25*scale);ctx.lineTo(12*scale,-38*scale);ctx.stroke()}ctx.restore()}
 function makeProgress(runners){const box=$('progressTrack');box.innerHTML='';const map=new Map();runners.forEach((r,i)=>{const d=document.createElement('div');d.className='progress-dot';d.textContent=r.number;d.style.background=COLORS[(r.number-1)%COLORS.length];d.style.color=r.number===2?'white':'#111';const lane=Number.isFinite(r.lane)?r.lane:i;d.style.top=`${12+(lane/(runners.length-1||1))*76}%`;box.appendChild(d);map.set(r.number,d)});updateProgress(map,runners);return map}
 function updateProgress(map,runners){runners.forEach(r=>{const el=map.get(r.number);if(el)el.style.left=`${7+r.display*86}%`})}
 function commentary(c,o){const a=o[0],b=o[1]||o[0],c3=o[2]||b;const esc=o.find(x=>x.style==='逃げ'),front=o.find(x=>x.style==='先行'),closer=[...o].reverse().find(x=>x.style==='追込')||o.find(x=>x.style==='差し');return [
@@ -574,5 +584,5 @@ function saveOnlineEdit(){
 function clearJoinUrl(){try{history.replaceState({},'',location.pathname)}catch(e){}}
 function parseJoin(){const p=new URLSearchParams(location.search),code=normalizeCode(p.get('join')),peer=normalizeCode(p.get('peer'));if(code){state.mode='join';state.roomCode=code;state.hostPeerId=peer||peerId(code);show('joinConfirm',false)}}
 document.addEventListener('pointerdown',()=>{unlockAudio()}, {capture:true,passive:true});
-$('backBtn').onclick=goBack;$('homeBtn').onclick=goHome;$('randomAbilityBtn').onclick=()=>{randomPoints(state.points);renderAbility()};$('partyRandomAbilityBtn').onclick=()=>{randomPoints(state.partyPoints,$('partyHorseType').value);renderPartyAbility()};$('partyHorseType').onchange=()=>{randomPoints(state.partyPoints,$('partyHorseType').value);renderPartyAbility()};$('partyHorseSource').onchange=()=>{togglePartySources();if($('partyHorseSource').value==='famous')applyFamousHorse()};$('partyFamousHorse').onchange=applyFamousHorse;$('partyJockeySource').onchange=togglePartySources;$('partyBtn').onclick=startPartySetup;$('partySetupBtn').onclick=beginPartyEntries;$('partyOpenEntryBtn').onclick=openPartyEntry;$('partyEntryDoneBtn').onclick=savePartyEntry;$('partyRevealBtn').onclick=revealPartyRace;$('partyKeepBtn').onclick=()=>startPartyNext(false);$('partyEditBtn').onclick=()=>startPartyNext(true);$('hostBtn').onclick=()=>beginCreate('host');$('joinYesBtn').onclick=()=>{clearJoinUrl();beginCreate('join')};$('joinNoBtn').onclick=()=>{clearJoinUrl();state.roomCode='';state.mode='party';show('home',false)};$('createNextBtn').onclick=onCreateNext;$('hostRaceCount').onchange=renderHostSchedule;$('createRoomBtn').onclick=createRoom;$('winTab').onclick=()=>setBet('win');$('placeTab').onclick=()=>setBet('place');$('stake').oninput=updateTicket;$('raceStartBtn').onclick=startFromBet;$('editOnlineBtn').onclick=openOnlineEdit;$('onlineEditSaveBtn').onclick=saveOnlineEdit;$('startOnlineBtn').onclick=hostGoBet;$('shareBtn').onclick=shareRoom;$('leaveRoomBtn').onclick=leaveRoom;$('nextBtn').onclick=nextRace;$('replayBtn').onclick=replay;$('whipBtn').onclick=tapWhip;$('resetWalletBtn').onclick=()=>{state.wallet=10000;saveWallet()};$('finalHomeBtn').onclick=goHome;window.addEventListener('beforeunload',()=>{if(state.isHost)broadcast({type:'roomClosed'});cleanupPeer()});window.addEventListener('resize',()=>{if(state.screen==='race'){resizeCanvas($('track'));if(raceRedraw)requestAnimationFrame(raceRedraw)}});
+$('backBtn').onclick=goBack;$('homeBtn').onclick=goHome;$('randomAbilityBtn').onclick=()=>{randomPoints(state.points);renderAbility()};$('partyRandomAbilityBtn').onclick=()=>{randomPoints(state.partyPoints,$('partyHorseType').value);renderPartyAbility()};$('partyHorseType').onchange=()=>{randomPoints(state.partyPoints,$('partyHorseType').value);renderPartyAbility()};$('partyHorseSource').onchange=()=>{togglePartySources();if($('partyHorseSource').value==='famous')applyFamousHorse()};$('partyFamousHorse').onchange=applyFamousHorse;$('partyJockeySource').onchange=togglePartySources;$('partyBtn').onclick=startPartySetup;$('partySetupBtn').onclick=beginPartyEntries;$('partyOpenEntryBtn').onclick=openPartyEntry;$('partyEntryDoneBtn').onclick=savePartyEntry;$('partyRevealBtn').onclick=revealPartyRace;$('partyKeepBtn').onclick=()=>startPartyNext(false);$('partyEditBtn').onclick=()=>startPartyNext(true);$('hostBtn').onclick=()=>beginCreate('host');$('joinYesBtn').onclick=()=>{clearJoinUrl();beginCreate('join')};$('joinNoBtn').onclick=()=>{clearJoinUrl();state.roomCode='';state.mode='party';show('home',false)};$('createNextBtn').onclick=onCreateNext;$('hostRaceCount').onchange=renderHostSchedule;$('createRoomBtn').onclick=createRoom;$('winTab').onclick=()=>setBet('win');$('placeTab').onclick=()=>setBet('place');$('stake').oninput=updateTicket;$('raceStartBtn').onclick=startFromBet;$('editOnlineBtn').onclick=openOnlineEdit;$('onlineEditSaveBtn').onclick=saveOnlineEdit;$('startOnlineBtn').onclick=hostGoBet;$('shareBtn').onclick=shareRoom;$('leaveRoomBtn').onclick=leaveRoom;$('nextBtn').onclick=nextRace;$('replayBtn').onclick=replay;$('whipBtn').onclick=tapWhip;$('resetWalletBtn').onclick=()=>{state.wallet=10000;saveWallet()};$('finalHomeBtn').onclick=goHome;window.addEventListener('beforeunload',()=>{if(state.isHost)broadcast({type:'roomClosed'});cleanupPeer()});window.addEventListener('resize',()=>{if(state.screen!=='race'||raceResizePending)return;raceResizePending=true;requestAnimationFrame(()=>{raceResizePending=false;const changed=resizeCanvas($('track'));if(changed&&raceRedraw)raceRedraw()})});
 setupSelects();renderAbility();saveWallet();show('home',false);parseJoin();
