@@ -51,3 +51,5 @@
   #commentary { font-size:1.02rem; }
   #leaderText { font-size:clamp(1.35rem,6vw,2rem); }
 }
+.race-audio-start{width:100%;min-height:64px;border:1px solid #f3cc54;border-radius:18px;background:linear-gradient(135deg,#ffe46a,#f0ae20);color:#152219;font-size:clamp(18px,4.5vw,26px);font-weight:900;box-shadow:0 10px 30px #e4b32844;cursor:pointer}
+.race-audio-start:active{transform:scale(.985)}
