@@ -68,3 +68,9 @@ v33 修正内容
 - 全馬が常に前進する最低移動量を設定し、停止・後退を防止
 - 脚質の特徴は中盤まで維持し、残り約14%から徐々に圧縮、残り約4.5%で写真判定級の混戦に調整
 - 端末1台モードとオンラインルームモードで共通レース処理を使用
+
+v40 updates
+- Race duration: about 24 seconds from start to winner finish.
+- Popular horses have a meaningful advantage, with upset chances preserved.
+- Selected-horse banner layout is fixed to prevent iPhone jitter.
+- Online player-to-horse assignment is fixed by playerId-to-number mapping.
