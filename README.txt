@@ -74,3 +74,10 @@ v40 updates
 - Popular horses have a meaningful advantage, with upset chances preserved.
 - Selected-horse banner layout is fixed to prevent iPhone jitter.
 - Online player-to-horse assignment is fixed by playerId-to-number mapping.
+
+v42 修正:
+- iPhoneでファンファーレまでAudioContextを維持する無音キープアライブを追加
+- ファンファーレ中もCanvasを毎フレーム再描画し、ゲート内の馬が消えないよう修正
+- 画面回転・サイズ変更後にCanvasが空になる問題を修正
+- 黄色バナーは作成馬ではなく、単勝/複勝で実際に選んだ馬を必ず表示
+- 選択馬の黄色リングも馬券選択と完全同期
