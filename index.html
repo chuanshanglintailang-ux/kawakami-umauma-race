@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#07120d">
-  <title>川上ウマウマレース v19</title>
+  <title>川上ウマウマレース v22</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -21,7 +21,7 @@
       <h2>予想して、賭けて、友達の馬と走れ。</h2>
       <div class="home-actions">
         <button id="partyBtn" class="primary big party-home">端末1台でみんなで遊ぶ<span>有名馬・有名騎手・オリジナル名で秘密対戦</span></button>
-        <button id="hostBtn" class="big">ルームを作る<span>ルーム名を決めて主催</span></button>
+        <button id="hostBtn" class="big">ルームを作る<span>QRコードを共有して友達を招待</span></button>
         <div class="qr-only-note card"><b>参加者は主催者のQRコードを読み取って参加</b><span>ルーム名の手入力は廃止しました</span></div>
       </div>
       <p class="fine">ゲーム内ポイントのみ。実際のお金は使用しません。</p>
@@ -121,28 +121,27 @@
   <section id="hostSetup" class="screen">
     <div class="screen-title"><small>CREATE ROOM</small><h2>ルームを作る</h2></div>
     <div class="card form-card">
-      <label>ルーム名・合言葉<input id="hostCode" maxlength="12" autocapitalize="characters" placeholder="例：UMARIN（4〜12文字）"></label>
-      <p class="hint">友達はこの文字を入力して参加します。英数字と「-」が使えます。</p>
+      <div class="privacy-banner">合言葉は不要です。ルームを作成すると専用QRコードが自動発行されます。</div>
       <div class="grid2">
-        <label>競馬場<select id="hostVenue"></select></label>
-        <label>レース<select id="hostRace"></select></label>
-        <label>馬場<select id="hostGoing"><option>良</option><option>稍重</option><option>重</option><option>不良</option></select></label>
+        <label>開催レース数<select id="hostRaceCount"><option value="1">1レース</option><option value="2">2レース</option><option value="3">3レース</option><option value="4">4レース</option><option value="5">5レース</option><option value="6">6レース</option><option value="7">7レース</option><option value="8">8レース</option><option value="9">9レース</option><option value="10">10レース</option></select></label>
         <label>出走頭数<select id="hostFieldSize"><option>8</option><option selected>10</option><option>12</option></select></label>
+        <label>馬場<select id="hostGoing"><option>良</option><option>稍重</option><option>重</option><option>不良</option></select></label>
       </div>
-      <button id="createRoomBtn" class="primary big">この名前でルーム作成</button>
+      <div class="schedule-head"><h3>大会レース設定</h3><p>各レースの競馬場とレース名を選んでな。馬番は毎レース自動で変わります。</p></div>
+      <div id="hostSchedule" class="host-schedule"></div>
+      <button id="createRoomBtn" class="primary big">大会ルームを作ってQRコードを表示</button>
       <p id="hostError" class="error"></p>
     </div>
   </section>
 
-  <section id="joinSetup" class="screen">
-    <div class="screen-title"><small>QR JOIN</small><h2>QRコードから参加</h2></div>
-    <div class="card form-card">
-      <div class="qr-scan-guide">📷</div>
-      <h3>主催者の画面に表示されたQRコードを、iPhoneのカメラで読み取ってください</h3>
-      <p class="hint">QRコードから開いた場合は、自動でルームへ接続します。ルーム名の手入力には対応していません。</p>
-      <input id="joinCode" type="hidden">
-      <button id="joinRoomBtn" class="primary big" hidden>QRから参加</button>
-      <p id="joinError" class="error"></p>
+  <section id="joinConfirm" class="screen">
+    <div class="center card secret-card">
+      <div class="secret-icon">📱</div>
+      <small>QR INVITATION</small>
+      <h2>このオンラインレースに参加しますか？</h2>
+      <p>「はい」を押すと、自分の馬と騎手を作ってルームへ参加します。</p>
+      <button id="joinYesBtn" class="primary big">はい、参加する</button>
+      <button id="joinNoBtn" class="ghost big">いいえ</button>
     </div>
   </section>
 
@@ -158,9 +157,10 @@
   </section>
 
   <section id="lobby" class="screen">
-    <div class="room-code card"><span>QR ROOM</span><b id="roomCodeText">------</b><small>参加はQRコードのみ</small><button id="copyCodeBtn" hidden>コピー</button></div>
-    <div class="qr-box card"><div id="qr"></div><div><h3>QRコードで参加</h3><p>友達のiPhoneカメラで読み取るだけで、自動的にこのルームへ参加します。</p><button id="shareBtn">QR参加リンクを共有</button></div></div>
+    <div class="room-code card"><span>ONLINE ROOM</span><b>招待用QRコード</b><small>このQRを読み取った人だけ参加できます</small></div>
+    <div class="qr-box card"><div id="qr"></div><div><h3>QRコードで参加</h3><p>友達のiPhoneカメラで読み取ると、参加確認画面が開きます。</p><button id="shareBtn">参加用QRリンクを共有</button></div></div>
     <div class="card">
+      <div id="tournamentProgress" class="tournament-progress"></div>
       <h2 id="lobbyRaceTitle">---</h2><p id="lobbyConditions" class="hint"></p>
       <div id="lobbyMembers" class="member-list"></div>
       <p id="lobbyStatus" class="hint">接続を準備しています…</p>
@@ -209,12 +209,21 @@
     <div class="result-mark"><small>OFFICIAL RESULT</small><h2>確定</h2></div>
     <div id="resultList" class="result-list"></div>
     <div id="payoutBox" class="payout card"></div>
+    <div id="roundRanking" class="card round-ranking" hidden></div>
     <button id="replayBtn" class="big">リプレイ</button>
     <button id="nextBtn" class="primary big">次のレースへ</button>
     <button id="resetWalletBtn" class="ghost big">ポイントを10,000に戻す</button>
   </section>
+
+  <section id="tournamentFinal" class="screen">
+    <div class="result-mark"><small>TOURNAMENT FINAL</small><h2>総合結果発表</h2></div>
+    <div id="championBanner" class="champion-banner card"></div>
+    <div id="finalRanking" class="final-ranking"></div>
+    <div id="roundHistory" class="card round-history"></div>
+    <button id="finalHomeBtn" class="primary big">ホームへ戻る</button>
+  </section>
 </main>
-<footer>川上ウマウマレース v20 / 非公式ファンメイドゲーム</footer>
+<footer>川上ウマウマレース v23 / 非公式ファンメイドゲーム</footer>
 <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="app.js"></script>
