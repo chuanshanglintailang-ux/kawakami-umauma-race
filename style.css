@@ -134,3 +134,15 @@
 /* v53: GPU-only live progress markers and tie-rank labels */
 .progress-dot{margin:0;transition:none;contain:layout style paint;backface-visibility:hidden}
 .ranking-place{min-width:58px;white-space:nowrap}
+
+/* v56: host-visible waiting bets and compact live race bet panel */
+#waitingBets{margin-top:14px;text-align:left}
+.race-screen .live-spectator-bets{position:relative;z-index:2;margin:8px 0 10px}
+.race-screen .spectator-bet-chip small{display:none}
+.race-screen .spectator-bet-chip{min-width:145px}
+@media(max-width:720px){
+ #waitingBets .spectator-bet-scroll,.race-screen .spectator-bet-scroll{gap:7px}
+ #waitingBets .spectator-bet-chip,.race-screen .spectator-bet-chip{min-width:138px}
+ .race-screen .spectator-bet-chip b{font-size:11px}
+ .race-screen .spectator-bet-chip span{font-size:12px}
+}
