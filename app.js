@@ -211,11 +211,13 @@ const gateBangMedia=new Audio('gate-bang.wav');
 fanfareMedia.preload='auto';gateBangMedia.preload='auto';
 let mediaAudioPrimed=false;
 async function primeMediaAudio(){
+ // ホーム画面では実音源を再生しない。load()だけで先読みし、
+ // ファンファーレと発走音はレース開始シーケンス内でのみ再生する。
  if(mediaAudioPrimed)return true;
  try{
-  for(const a of [fanfareMedia,gateBangMedia]){a.muted=true;a.currentTime=0;const p=a.play();if(p&&p.then)await p;a.pause();a.currentTime=0;a.muted=false}
+  for(const a of [fanfareMedia,gateBangMedia]){a.pause();a.currentTime=0;a.preload='auto';a.load()}
   mediaAudioPrimed=true;return true
- }catch(e){console.warn('media audio prime failed',e);return false}
+ }catch(e){console.warn('media audio preload failed',e);return false}
 }
 let raceRedraw=null;
 let raceResizePending=false;
@@ -619,6 +621,6 @@ function saveOnlineEdit(){
 }
 function clearJoinUrl(){try{history.replaceState({},'',location.pathname)}catch(e){}}
 function parseJoin(){const p=new URLSearchParams(location.search),code=normalizeCode(p.get('join')),peer=normalizeCode(p.get('peer'));if(code){state.mode='join';state.roomCode=code;state.hostPeerId=peer||peerId(code);show('joinConfirm',false)}}
-document.addEventListener('pointerdown',e=>{if(e.target?.closest?.('select,input,textarea,option'))return;unlockAudio();primeMediaAudio()}, {capture:true,passive:true});
+document.addEventListener('pointerdown',e=>{if(e.target?.closest?.('select,input,textarea,option'))return;unlockAudio()}, {capture:true,passive:true});
 $('backBtn').onclick=goBack;$('homeBtn').onclick=goHome;$('randomAbilityBtn').onclick=()=>{randomPoints(state.points);renderAbility()};$('partyRandomAbilityBtn').onclick=()=>{randomPoints(state.partyPoints,$('partyHorseType').value);renderPartyAbility()};$('partyHorseType').onchange=()=>{randomPoints(state.partyPoints,$('partyHorseType').value);renderPartyAbility()};$('partyHorseSource').onchange=()=>{togglePartySources();if($('partyHorseSource').value==='famous')applyFamousHorse()};$('partyFamousHorse').onchange=applyFamousHorse;$('partyJockeySource').onchange=togglePartySources;$('partyBtn').onclick=startPartySetup;$('partySetupBtn').onclick=beginPartyEntries;$('partyOpenEntryBtn').onclick=openPartyEntry;$('partyEntryDoneBtn').onclick=savePartyEntry;$('partyRevealBtn').onclick=revealPartyRace;$('partyKeepBtn').onclick=()=>startPartyNext(false);$('partyEditBtn').onclick=()=>startPartyNext(true);$('hostBtn').onclick=()=>beginCreate('host');$('joinYesBtn').onclick=()=>{clearJoinUrl();beginCreate('join')};$('joinNoBtn').onclick=()=>{clearJoinUrl();state.roomCode='';state.mode='party';show('home',false)};$('createNextBtn').onclick=onCreateNext;$('hostRaceCount').onchange=renderHostSchedule;$('createRoomBtn').onclick=createRoom;$('winTab').onclick=()=>setBet('win');$('placeTab').onclick=()=>setBet('place');$('stake').oninput=updateTicket;$('raceStartBtn').onclick=startFromBet;$('hostStartRaceBtn').onclick=prepareOnlineRace;$('editOnlineBtn').onclick=openOnlineEdit;$('onlineEditSaveBtn').onclick=saveOnlineEdit;$('startOnlineBtn').onclick=hostGoBet;$('shareBtn').onclick=shareRoom;$('leaveRoomBtn').onclick=leaveRoom;$('nextBtn').onclick=nextRace;$('replayBtn').onclick=replay;$('resetWalletBtn').onclick=()=>{if(confirm('所持ポイントを10,000ptに戻しますか？')){state.wallet=10000;saveWallet();if(state.player?.id&&state.tournament?.scores)state.tournament.scores[state.player.id]=10000}};$('finalHomeBtn').onclick=()=>{resetWalletAfterTournament();goHome()};window.addEventListener('beforeunload',()=>{if(state.isHost)broadcast({type:'roomClosed'});cleanupPeer()});window.addEventListener('resize',()=>{if(state.screen!=='race'||raceResizePending)return;raceResizePending=true;requestAnimationFrame(()=>{raceResizePending=false;const changed=resizeCanvas($('track'));if(changed&&raceRedraw)raceRedraw()})});
 setupSelects();renderAbility();saveWallet();show('home',false);parseJoin();
