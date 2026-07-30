@@ -261,40 +261,49 @@ function styleBand(style,phase){
  return 0
 }
 function buildRaceTimeline(runners,seed,distance){
- const rnd=seeded(seed^0x35a1f00d);
- const times=[0,5,10,16,23,30,35,39,42,44,45];
- const phases=times.map(t=>t/45);
+ const rnd=seeded(seed^0x37a11ce);
+ // 1.5秒ごとの密なアンカーで、加速差による抜きつ抜かれつを滑らかに描く。
+ const times=[];for(let t=0;t<=45.0001;t+=1.5)times.push(+t.toFixed(2));
  const compressionStart=Math.max(.50,1-700/distance);
+ const sameStyleIndex={};
+ runners.forEach(r=>{const k=r.style;const n=sameStyleIndex[k]||0;sameStyleIndex[k]=n+1;r.rivalIndex=n});
  runners.forEach((r,idx)=>{
   const pts=[];
   let prev=0;
-  const groupPhase=rnd()*Math.PI*2;
-  const personalPhase=rnd()*Math.PI*2;
-  const pulse=[0,(rnd()-.5)*.018,(rnd()-.5)*.026,(rnd()-.5)*.030,(rnd()-.5)*.034,(rnd()-.5)*.036,(rnd()-.5)*.030,(rnd()-.5)*.026,(rnd()-.5)*.020,(rnd()-.5)*.012,0];
-  phases.forEach((ph,k)=>{
+  const phaseA=rnd()*Math.PI*2,phaseB=rnd()*Math.PI*2,phaseC=rnd()*Math.PI*2;
+  const surgeAt1=.18+rnd()*.18,surgeAt2=.43+rnd()*.20,surgeAt3=.70+rnd()*.16;
+  const surge1=(rnd()-.36)*.050,surge2=(rnd()-.42)*.060,surge3=(rnd()-.45)*.070;
+  times.forEach((t,k)=>{
+   const ph=t/45;
    let raw=ph;
-   const band=styleBand(r.style,ph)*(1-smooth((ph-compressionStart)/Math.max(.08,1-compressionStart))*.80);
-   // 同脚質同士でも細かく順位が入れ替わる波。時間が進んでも停止させない。
-   const groupWave=Math.sin(ph*8.5+groupPhase)*.015*Math.sin(Math.PI*ph);
-   const personalWave=Math.sin(ph*15.5+personalPhase)*.010*Math.sin(Math.PI*ph);
-   raw+=band+groupWave+personalWave+pulse[k];
-   // 残り700mから徐々に馬群を詰める。ただし横一列にはしない。
-   const pack=smooth((ph-compressionStart)/Math.max(.08,.92-compressionStart));
-   const liveRankBias=(r.finalRank*.0048);
-   const packTarget=ph-liveRankBias;
-   raw=raw*(1-pack*.72)+packTarget*(pack*.72);
-   // 残り300mでは一度順位を揺らし、最後50mだけ公式着順へ収束。
+   // 脚質の基本隊列。終盤まで特徴を残しつつ、徐々に差を縮める。
+   const comp=smooth((ph-compressionStart)/Math.max(.08,1-compressionStart));
+   raw+=styleBand(r.style,ph)*(1-comp*.72);
+   // 同脚質同士の競り合い。位相をずらし、何度も前後関係が入れ替わる。
+   const rivalry=Math.sin(ph*13.5+phaseA+r.rivalIndex*1.7)*(.020+.012*Math.sin(Math.PI*ph));
+   // 全体のうねりと個別の加速。瞬間移動ではなく連続曲線になる。
+   const wave2=Math.sin(ph*22+phaseB)*.012*Math.sin(Math.PI*ph);
+   const wave3=Math.sin(ph*7.5+phaseC)*.010*Math.sin(Math.PI*ph);
+   const bell=(x,c,w)=>Math.exp(-Math.pow((x-c)/w,2));
+   raw+=rivalry+wave2+wave3+surge1*bell(ph,surgeAt1,.075)+surge2*bell(ph,surgeAt2,.085)+surge3*bell(ph,surgeAt3,.075);
+   // 残り700mから馬群を詰めるが、横一列には吸着させない。
+   const rankGap=r.finalRank*.0065;
+   const packTarget=ph-rankGap;
+   raw=raw*(1-comp*.58)+packTarget*(comp*.58);
+   // 残り300mは一番激しく。偶数・奇数だけでなく個体ごとに違う波を重ねる。
    if(ph>=.875&&ph<.978){
     const heat=Math.sin((ph-.875)/.103*Math.PI);
-    raw+=(r.finalRank%2===0?1:-1)*heat*(.010+rnd()*.004);
+    raw+=heat*(Math.sin(phaseA+r.finalRank*1.3)*.017+Math.cos(phaseB+r.number)*.009);
    }
-   if(k===times.length-1){
-    const finishAt45=Math.max(.935,1-r.finalRank*.0085);
-    raw=finishAt45;
-   }
-   const minStep=k===0?0:.012;
+   // 最後50mだけ公式着順へ自然に収束。1〜3着は肉眼で分かる僅差。
+   const finalMix=smooth((ph-.978)/.022);
+   const finalTarget=ph-r.finalRank*.0078;
+   raw=raw*(1-finalMix)+finalTarget*finalMix;
+   if(k===times.length-1)raw=Math.max(.94,1-r.finalRank*.0078);
+   // 各馬自身は必ず前進。相対速度差で追い抜きが起きる。
+   const minStep=k===0?0:.0065;
    raw=Math.max(prev+minStep,raw);
-   raw=Math.min(k===times.length-1?1:0.992,raw);
+   raw=Math.min(k===times.length-1?1:0.993,raw);
    pts.push(raw);prev=raw;
   });
   r.timeline={times,points:pts};
@@ -309,13 +318,12 @@ function sampleTimeline(r,wall){
    return points[i-1]+(points[i]-points[i-1])*u
   }
  }
- // 45秒以降は各馬の公式ゴール時刻まで必ず前進し続ける。
  const at45=points[points.length-1];
  if(wall<r.finishWall){
   const u=(wall-45)/Math.max(.08,r.finishWall-45);
-  return at45+(1.001-at45)*Math.max(0,Math.min(1,u))
+  return at45+(1.002-at45)*Math.max(0,Math.min(1,u))
  }
- return 1.001+Math.min(.022,(wall-r.finishWall)*.018)
+ return 1.002+Math.min(.024,(wall-r.finishWall)*.018)
 }
 function controlledRunner(runners){if(state.mode==='solo')return runners.find(r=>r.number===state.selection);return runners.find(r=>r.playerId===state.player?.id)}
 function applyWhipEvent(data){if(!data?.tapId||state.whipSeen.has(data.tapId))return;state.whipSeen.add(data.tapId);const rt=state.raceRuntime;if(!rt)return;const r=rt.runners.find(x=>data.playerId?x.playerId===data.playerId:x.number===data.number);if(!r||r.finish||r.display<.76)return;r.whipTaps=(r.whipTaps||0)+1;const benefit=r.whipTaps<=8?.045:r.whipTaps<=12?.022:.006;r.finishWall=Math.max(rt.wall+.55,r.finishWall-benefit);r.whipFlash=performance.now()+180}
@@ -323,7 +331,7 @@ function tapWhip(){if(state.mode!=='host'&&state.mode!=='join')return;const rt=s
 function runRace(payload,token=state.navToken){
  const canvas=$('track'),ctx=canvas.getContext('2d');resizeCanvas(canvas);
  const plan=officialPlan(payload.field,payload.seed),rnd=seeded(payload.seed^0x51f15e);
- const runners=plan.map((h,i)=>({...h,display:0,finish:false,lane:i,whipTaps:0,actualFinish:null,lastDisplay:0,visualSpeed:0}));
+ const runners=plan.map((h,i)=>({...h,display:0,finish:false,lane:i,whipTaps:0,actualFinish:null,lastDisplay:0,visualSpeed:1/45}));
  buildRaceTimeline(runners,payload.seed,state.race.distance);
  state.whipSeen=new Set();state.raceRuntime={runners,wall:0};
  const dots=makeProgress(runners);$('liveTitle').textContent=state.race.name;$('liveCond').textContent=conditionText();
@@ -347,12 +355,19 @@ function runRace(payload,token=state.navToken){
   const dt=Math.min(.05,Math.max(.001,(ts-lastFrame)/1000));lastFrame=ts;
   runners.forEach(h=>{
    const sampled=sampleTimeline(h,wall);
-   // サンプル曲線が緩い区間でも毎フレーム必ず前進。停止・後退は絶対にしない。
-   const minimumAdvance=dt*.00045;
+   const ahead=sampleTimeline(h,wall+.22);
+   // 目標曲線の傾きから速度を作り、加減速を滑らかにする。全馬の最低速度を保証。
+   const curveSpeed=Math.max(.010,(ahead-sampled)/.22);
+   const chase=(sampled-h.display)*1.9;
+   const desired=Math.max(.010,Math.min(.050,curveSpeed+chase));
+   const accel=desired>h.visualSpeed?3.8:2.6;
+   h.visualSpeed+=(desired-h.visualSpeed)*Math.min(1,accel*dt);
+   h.visualSpeed=Math.max(.010,Math.min(.050,h.visualSpeed));
    h.lastDisplay=h.display;
-   h.display=Math.max(h.display+minimumAdvance,sampled);
-   h.visualSpeed=(h.display-h.lastDisplay)/dt;
-   if(wall>=h.finishWall){h.finish=true;h.actualFinish=h.finishWall}
+   h.display+=h.visualSpeed*dt;
+   // 目標より大幅に遅れた時だけ、見えない程度に追従させる。瞬間移動はさせない。
+   if(sampled-h.display>.025)h.display+=Math.min(.004,(sampled-h.display)*.08);
+   if(!h.finish&&h.display>=1){h.finish=true;h.actualFinish=wall;h.display=Math.max(1,h.display)}
   });
   drawRaceScene(ctx,runners,{showGate:false});updateProgress(dots,runners);
   const order=[...runners].sort((a,b)=>b.display-a.display||a.finishWall-b.finishWall),lead=order[0],control=controlledRunner(runners);
@@ -372,7 +387,7 @@ function runRace(payload,token=state.navToken){
    else $('commentary').textContent=commentary(call,order)
   }
   if(runners.every(h=>h.finish)||wall>lastFinish+1){
-   if(!done){done=true;$('whipPanel').hidden=true;const sorted=[...runners].sort((a,b)=>a.finishWall-b.finishWall||a.number-b.number);const base=estimateSeconds(state.race.distance),first=sorted[0].finishWall;state.result=sorted.map(h=>({...h,officialTime:base+(h.finishWall-first)}));state.raceRuntime=null;setTimeout(showResult,900)}return
+   if(!done){done=true;$('whipPanel').hidden=true;const sorted=[...runners].sort((a,b)=>(a.actualFinish??a.finishWall)-(b.actualFinish??b.finishWall)||a.number-b.number);const base=estimateSeconds(state.race.distance),first=(sorted[0].actualFinish??sorted[0].finishWall);state.result=sorted.map(h=>({...h,officialTime:base+((h.actualFinish??h.finishWall)-first)}));state.raceRuntime=null;setTimeout(showResult,900)}return
   }
   requestAnimationFrame(frame)
  }
