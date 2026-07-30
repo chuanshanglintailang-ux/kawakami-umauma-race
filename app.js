@@ -2,6 +2,7 @@
 const $=id=>document.getElementById(id);
 const ABILITIES=['speed','stamina','kick','start','mud'];
 const ABILITY_LABEL={speed:'スピード',stamina:'スタミナ',kick:'末脚',start:'スタート',mud:'道悪'};
+const RACE_DURATION=27;
 const COLORS=['#fff','#222','#e33','#176ad4','#f5d22d','#29a85a','#f08ac1','#f18222','#8e54ca','#69c7d7','#ddd','#7b4b25'];
 const VENUES={東京:{turn:'左'},中山:{turn:'右'},阪神:{turn:'右'},京都:{turn:'右'},中京:{turn:'左'},新潟:{turn:'左'},札幌:{turn:'右'},函館:{turn:'右'},福島:{turn:'右'},小倉:{turn:'右'}};
 const RACES=[
@@ -242,7 +243,7 @@ function officialPlan(field,seed){
   const tieBreaker=rnd()*1e-4;
   return {h,gateIndex,score:ability*.72+condition+tactics+breakLuck+tieBreaker}
  }).sort((a,b)=>b.score-a.score);
- const winnerTime=44.75+rnd()*.45;
+ const winnerTime=26.80+rnd()*.35;
  // 毎回差も変える。1〜3着は見分けられる僅差、後続も同じ間隔にはしない。
  let gap=0;
  return rows.map((x,rank)=>{
@@ -279,7 +280,7 @@ function styleBand(style,phase){
 function buildRaceTimeline(runners,seed,distance){
  const rnd=seeded(seed^0x37a11ce);
  // 1.5秒ごとの密なアンカーで、加速差による抜きつ抜かれつを滑らかに描く。
- const times=[];for(let t=0;t<=45.0001;t+=1.5)times.push(+t.toFixed(2));
+ const times=[];for(let t=0;t<=RACE_DURATION+.0001;t+=.9)times.push(+t.toFixed(2));
  const compressionStart=Math.max(.50,1-700/distance);
  const sameStyleIndex={};
  runners.forEach(r=>{const k=r.style;const n=sameStyleIndex[k]||0;sameStyleIndex[k]=n+1;r.rivalIndex=n});
@@ -290,7 +291,7 @@ function buildRaceTimeline(runners,seed,distance){
   const surgeAt1=.18+rnd()*.18,surgeAt2=.43+rnd()*.20,surgeAt3=.70+rnd()*.16;
   const surge1=(rnd()-.36)*.050,surge2=(rnd()-.42)*.060,surge3=(rnd()-.45)*.070;
   times.forEach((t,k)=>{
-   const ph=t/45;
+   const ph=t/RACE_DURATION;
    let raw=ph;
    // 脚質の基本隊列。終盤まで特徴を残しつつ、徐々に差を縮める。
    const comp=smooth((ph-compressionStart)/Math.max(.08,1-compressionStart));
@@ -334,10 +335,10 @@ function sampleTimeline(r,wall){
    return points[i-1]+(points[i]-points[i-1])*u
   }
  }
- const at45=points[points.length-1];
+ const atEnd=points[points.length-1];
  if(wall<r.finishWall){
-  const u=(wall-45)/Math.max(.08,r.finishWall-45);
-  return at45+(1.002-at45)*Math.max(0,Math.min(1,u))
+  const u=(wall-RACE_DURATION)/Math.max(.08,r.finishWall-RACE_DURATION);
+  return atEnd+(1.002-atEnd)*Math.max(0,Math.min(1,u))
  }
  return 1.002+Math.min(.024,(wall-r.finishWall)*.018)
 }
@@ -348,7 +349,7 @@ function runRace(payload,token=state.navToken){
  const canvas=$('track'),ctx=canvas.getContext('2d');resizeCanvas(canvas);
  const plan=officialPlan(payload.field,payload.seed),rnd=seeded(payload.seed^0x51f15e);
  const laneByNumber=new Map(payload.field.map((h,i)=>[h.number,i]));
- const runners=plan.map((h,i)=>({...h,display:0,finish:false,lane:laneByNumber.get(h.number)??h.gateIndex??i,whipTaps:0,actualFinish:null,lastDisplay:0,visualSpeed:1/45}));
+ const runners=plan.map((h,i)=>({...h,display:0,finish:false,lane:laneByNumber.get(h.number)??h.gateIndex??i,whipTaps:0,actualFinish:null,lastDisplay:0,visualSpeed:1/RACE_DURATION}));
  buildRaceTimeline(runners,payload.seed,state.race.distance);
  state.whipSeen=new Set();state.raceRuntime={runners,wall:0};
  const dots=makeProgress(runners);$('liveTitle').textContent=state.race.name;$('liveCond').textContent=conditionText();
@@ -372,14 +373,14 @@ function runRace(payload,token=state.navToken){
   const dt=Math.min(.05,Math.max(.001,(ts-lastFrame)/1000));lastFrame=ts;
   runners.forEach(h=>{
    const sampled=sampleTimeline(h,wall);
-   const ahead=sampleTimeline(h,wall+.22);
+   const ahead=sampleTimeline(h,wall+.14);
    // 目標曲線の傾きから速度を作り、加減速を滑らかにする。全馬の最低速度を保証。
-   const curveSpeed=Math.max(.010,(ahead-sampled)/.22);
+   const curveSpeed=Math.max(.016,(ahead-sampled)/.14);
    const chase=(sampled-h.display)*1.9;
-   const desired=Math.max(.010,Math.min(.050,curveSpeed+chase));
+   const desired=Math.max(.016,Math.min(.090,curveSpeed+chase));
    const accel=desired>h.visualSpeed?3.8:2.6;
    h.visualSpeed+=(desired-h.visualSpeed)*Math.min(1,accel*dt);
-   h.visualSpeed=Math.max(.010,Math.min(.050,h.visualSpeed));
+   h.visualSpeed=Math.max(.016,Math.min(.090,h.visualSpeed));
    h.lastDisplay=h.display;
    h.display+=h.visualSpeed*dt;
    // 目標より大幅に遅れた時だけ、見えない程度に追従させる。瞬間移動はさせない。
