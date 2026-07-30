@@ -1,336 +1,162 @@
 'use strict';
-import { firebaseConfig } from './firebase-config.js';
 const $=id=>document.getElementById(id);
-const horses=[
-{name:'イクイノックス',rating:100,style:'先行',speed:100,stamina:99,kick:99,start:94,mud:92,best:[1800,2500]},
-{name:'ディープインパクト',rating:100,style:'追込',speed:100,stamina:98,kick:100,start:88,mud:90,best:[1800,3200]},
-{name:'オルフェーヴル',rating:99,style:'追込',speed:98,stamina:100,kick:99,start:83,mud:96,best:[2000,3200]},
-{name:'アーモンドアイ',rating:100,style:'差し',speed:100,stamina:94,kick:100,start:93,mud:90,best:[1600,2400]},
-{name:'キタサンブラック',rating:99,style:'逃げ',speed:96,stamina:100,kick:94,start:99,mud:93,best:[2000,3200]},
-{name:'コントレイル',rating:98,style:'差し',speed:98,stamina:97,kick:99,start:91,mud:89,best:[1800,3000]},
-{name:'ジェンティルドンナ',rating:98,style:'先行',speed:98,stamina:98,kick:97,start:95,mud:92,best:[1800,2500]},
-{name:'ウオッカ',rating:98,style:'差し',speed:99,stamina:93,kick:99,start:90,mud:90,best:[1600,2400]},
-{name:'ロードカナロア',rating:98,style:'先行',speed:100,stamina:80,kick:99,start:98,mud:94,best:[1000,1600]},
-{name:'エルコンドルパサー',rating:98,style:'先行',speed:97,stamina:98,kick:97,start:95,mud:97,best:[1600,2500]},
-{name:'テイエムオペラオー',rating:98,style:'先行',speed:95,stamina:100,kick:96,start:96,mud:95,best:[2000,3200]},
-{name:'ナリタブライアン',rating:98,style:'先行',speed:98,stamina:99,kick:98,start:94,mud:94,best:[1800,3200]},
-{name:'シンボリルドルフ',rating:98,style:'先行',speed:97,stamina:100,kick:96,start:97,mud:93,best:[2000,3200]},
-{name:'ミスターシービー',rating:96,style:'追込',speed:96,stamina:98,kick:99,start:82,mud:91,best:[1800,3200]},
-{name:'トウカイテイオー',rating:97,style:'先行',speed:98,stamina:96,kick:98,start:94,mud:91,best:[1800,2500]},
-{name:'スペシャルウィーク',rating:97,style:'差し',speed:96,stamina:99,kick:97,start:89,mud:92,best:[2000,3200]},
-{name:'グラスワンダー',rating:97,style:'先行',speed:98,stamina:96,kick:98,start:94,mud:95,best:[1600,2500]},
-{name:'サイレンススズカ',rating:97,style:'逃げ',speed:100,stamina:91,kick:96,start:100,mud:92,best:[1600,2200]},
-{name:'メジロマックイーン',rating:97,style:'先行',speed:94,stamina:100,kick:93,start:96,mud:96,best:[2200,3200]},
-{name:'ゴールドシップ',rating:97,style:'追込',speed:94,stamina:100,kick:97,start:77,mud:100,best:[2200,3200]},
-{name:'ブエナビスタ',rating:97,style:'差し',speed:98,stamina:96,kick:100,start:88,mud:91,best:[1600,2500]},
-{name:'ジャスタウェイ',rating:97,style:'差し',speed:100,stamina:91,kick:100,start:88,mud:93,best:[1600,2200]},
-{name:'モーリス',rating:97,style:'先行',speed:100,stamina:88,kick:99,start:95,mud:94,best:[1400,2000]},
-{name:'グランアレグリア',rating:98,style:'差し',speed:100,stamina:83,kick:100,start:91,mud:91,best:[1200,2000]},
-{name:'ドウデュース',rating:97,style:'差し',speed:98,stamina:97,kick:100,start:87,mud:90,best:[1600,2500]},
-{name:'リバティアイランド',rating:96,style:'差し',speed:98,stamina:96,kick:99,start:89,mud:90,best:[1600,2500]},
-{name:'ソダシ',rating:95,style:'先行',speed:97,stamina:89,kick:95,start:97,mud:94,best:[1400,2000]},
-{name:'デアリングタクト',rating:96,style:'差し',speed:96,stamina:96,kick:98,start:89,mud:95,best:[1600,2500]},
-{name:'ラヴズオンリーユー',rating:96,style:'差し',speed:96,stamina:96,kick:98,start:90,mud:91,best:[1800,2500]},
-{name:'クロノジェネシス',rating:97,style:'先行',speed:96,stamina:99,kick:96,start:95,mud:100,best:[1800,2500]},
-{name:'リスグラシュー',rating:97,style:'差し',speed:97,stamina:98,kick:99,start:88,mud:95,best:[1600,2500]},
-{name:'エフフォーリア',rating:96,style:'先行',speed:97,stamina:97,kick:97,start:94,mud:90,best:[1800,2500]},
-{name:'タイトルホルダー',rating:96,style:'逃げ',speed:94,stamina:100,kick:91,start:100,mud:96,best:[2200,3200]},
-{name:'サトノダイヤモンド',rating:96,style:'差し',speed:95,stamina:99,kick:97,start:89,mud:91,best:[2000,3200]},
-{name:'シュヴァルグラン',rating:95,style:'先行',speed:93,stamina:100,kick:94,start:93,mud:93,best:[2200,3200]},
-{name:'エピファネイア',rating:96,style:'先行',speed:96,stamina:99,kick:96,start:94,mud:96,best:[2000,3200]},
-{name:'キズナ',rating:95,style:'差し',speed:96,stamina:97,kick:98,start:88,mud:92,best:[1800,2500]},
-{name:'キングカメハメハ',rating:97,style:'先行',speed:99,stamina:94,kick:98,start:96,mud:93,best:[1600,2400]},
-{name:'ハーツクライ',rating:96,style:'差し',speed:96,stamina:99,kick:98,start:88,mud:94,best:[2000,3200]},
-{name:'ゼンノロブロイ',rating:95,style:'先行',speed:95,stamina:99,kick:95,start:94,mud:91,best:[2000,3200]},
-{name:'アドマイヤムーン',rating:95,style:'差し',speed:97,stamina:95,kick:98,start:89,mud:94,best:[1600,2400]},
-{name:'ダイワスカーレット',rating:97,style:'逃げ',speed:98,stamina:96,kick:96,start:100,mud:94,best:[1600,2500]},
-{name:'メイショウサムソン',rating:95,style:'先行',speed:94,stamina:100,kick:93,start:96,mud:98,best:[2000,3200]},
-{name:'ヴィクトワールピサ',rating:96,style:'先行',speed:96,stamina:97,kick:96,start:95,mud:96,best:[1800,2500]},
-{name:'エイシンフラッシュ',rating:95,style:'差し',speed:96,stamina:95,kick:99,start:88,mud:93,best:[1800,2500]},
-{name:'フェノーメノ',rating:95,style:'先行',speed:94,stamina:100,kick:94,start:94,mud:91,best:[2200,3200]},
-{name:'ジャングルポケット',rating:95,style:'差し',speed:96,stamina:98,kick:98,start:88,mud:93,best:[2000,2500]},
-{name:'マンハッタンカフェ',rating:95,style:'差し',speed:93,stamina:100,kick:96,start:86,mud:92,best:[2200,3200]},
-{name:'アグネスタキオン',rating:96,style:'先行',speed:99,stamina:94,kick:99,start:95,mud:93,best:[1600,2400]},
-{name:'クロフネ',rating:97,style:'先行',speed:99,stamina:92,kick:98,start:97,mud:100,best:[1400,2100]},
-{name:'アグネスデジタル',rating:96,style:'差し',speed:98,stamina:90,kick:98,start:90,mud:100,best:[1200,2000]},
-{name:'カネヒキリ',rating:95,style:'先行',speed:96,stamina:94,kick:94,start:96,mud:100,best:[1400,2100]},
-{name:'ヴァーミリアン',rating:95,style:'先行',speed:95,stamina:97,kick:94,start:95,mud:100,best:[1600,2400]},
-{name:'ホッコータルマエ',rating:95,style:'先行',speed:94,stamina:98,kick:92,start:96,mud:100,best:[1600,2400]},
-{name:'コパノリッキー',rating:95,style:'逃げ',speed:97,stamina:94,kick:91,start:100,mud:99,best:[1400,2100]},
-{name:'クリソベリル',rating:96,style:'先行',speed:96,stamina:96,kick:95,start:96,mud:100,best:[1600,2100]},
-{name:'レモンポップ',rating:97,style:'先行',speed:99,stamina:88,kick:97,start:98,mud:100,best:[1200,1800]},
-{name:'フォーエバーヤング',rating:98,style:'先行',speed:98,stamina:96,kick:98,start:97,mud:100,best:[1600,2100]},
-{name:'オジュウチョウサン',rating:95,style:'先行',speed:89,stamina:100,kick:91,start:96,mud:100,best:[2500,4300]},
-{name:'タイキシャトル',rating:97,style:'先行',speed:100,stamina:86,kick:99,start:98,mud:96,best:[1200,1600]},
-{name:'サクラバクシンオー',rating:96,style:'逃げ',speed:100,stamina:78,kick:96,start:100,mud:92,best:[1000,1400]},
-{name:'デュランダル',rating:95,style:'追込',speed:99,stamina:81,kick:100,start:78,mud:90,best:[1000,1600]},
-{name:'カレンチャン',rating:95,style:'先行',speed:99,stamina:79,kick:96,start:98,mud:96,best:[1000,1400]},
-{name:'ストレイトガール',rating:94,style:'差し',speed:98,stamina:80,kick:98,start:91,mud:94,best:[1000,1600]},
-{name:'ミッキーアイル',rating:94,style:'逃げ',speed:99,stamina:82,kick:94,start:100,mud:91,best:[1200,1600]},
-{name:'ファインニードル',rating:94,style:'先行',speed:98,stamina:80,kick:95,start:97,mud:97,best:[1000,1400]},
-{name:'ダノンスマッシュ',rating:94,style:'先行',speed:98,stamina:81,kick:96,start:96,mud:93,best:[1000,1400]},
-{name:'ナランフレグ',rating:92,style:'追込',speed:96,stamina:82,kick:99,start:79,mud:97,best:[1000,1400]},
-{name:'ナムラクレア',rating:95,style:'差し',speed:99,stamina:80,kick:99,start:92,mud:97,best:[1000,1400]},
-{name:'サトノレーヴ',rating:95,style:'先行',speed:99,stamina:80,kick:96,start:98,mud:92,best:[1000,1400]},
-{name:'ノースフライト',rating:95,style:'先行',speed:99,stamina:86,kick:98,start:96,mud:91,best:[1400,1800]},
-{name:'ニホンピロウイナー',rating:95,style:'先行',speed:99,stamina:84,kick:96,start:97,mud:92,best:[1400,1800]},
-{name:'ダイワメジャー',rating:96,style:'先行',speed:98,stamina:91,kick:95,start:98,mud:95,best:[1400,2000]},
-{name:'ハットトリック',rating:94,style:'差し',speed:98,stamina:86,kick:99,start:87,mud:90,best:[1400,1800]},
-{name:'ロゴタイプ',rating:94,style:'先行',speed:96,stamina:92,kick:94,start:97,mud:94,best:[1600,2000]},
-{name:'インディチャンプ',rating:95,style:'差し',speed:99,stamina:87,kick:98,start:90,mud:91,best:[1400,1800]},
-{name:'ソングライン',rating:96,style:'差し',speed:99,stamina:88,kick:99,start:89,mud:94,best:[1400,1800]},
-{name:'セリフォス',rating:95,style:'差し',speed:99,stamina:86,kick:99,start:88,mud:90,best:[1400,1800]},
-{name:'ジャンタルマンタル',rating:96,style:'先行',speed:100,stamina:87,kick:97,start:97,mud:89,best:[1400,1800]},
-{name:'ソウルラッシュ',rating:95,style:'差し',speed:98,stamina:88,kick:98,start:89,mud:100,best:[1400,1800]},
-{name:'エアグルーヴ',rating:96,style:'先行',speed:97,stamina:96,kick:97,start:94,mud:92,best:[1800,2500]},
-{name:'ヒシアマゾン',rating:95,style:'差し',speed:96,stamina:96,kick:98,start:88,mud:95,best:[1600,2500]},
-{name:'ファビラスラフイン',rating:94,style:'先行',speed:96,stamina:94,kick:96,start:94,mud:90,best:[1600,2400]},
-{name:'スティルインラブ',rating:94,style:'差し',speed:95,stamina:94,kick:97,start:89,mud:92,best:[1600,2500]},
-{name:'アパパネ',rating:95,style:'先行',speed:96,stamina:94,kick:96,start:95,mud:92,best:[1600,2400]},
-{name:'メジロドーベル',rating:95,style:'差し',speed:95,stamina:96,kick:97,start:87,mud:93,best:[1600,2500]},
-{name:'スイープトウショウ',rating:95,style:'追込',speed:95,stamina:95,kick:100,start:80,mud:94,best:[1600,2500]},
-{name:'ショウナンパンドラ',rating:95,style:'差し',speed:95,stamina:96,kick:98,start:87,mud:93,best:[1800,2500]},
-{name:'マリアライト',rating:94,style:'差し',speed:93,stamina:98,kick:96,start:86,mud:100,best:[2000,2500]},
-{name:'スターズオンアース',rating:96,style:'差し',speed:97,stamina:97,kick:99,start:89,mud:92,best:[1600,2500]},
-{name:'チェルヴィニア',rating:95,style:'差し',speed:96,stamina:97,kick:98,start:88,mud:92,best:[1800,2500]},
-{name:'レガレイラ',rating:95,style:'追込',speed:96,stamina:97,kick:100,start:83,mud:95,best:[1800,2500]},
-{name:'クロワデュノール',rating:97,style:'先行',speed:98,stamina:98,kick:96,start:96,mud:90,best:[1800,2500]},
-{name:'ダノンデサイル',rating:96,style:'先行',speed:96,stamina:99,kick:94,start:95,mud:92,best:[2000,2500]},
-{name:'ミュージアムマイル',rating:95,style:'差し',speed:97,stamina:92,kick:98,start:90,mud:90,best:[1600,2200]},
-{name:'マスカレードボール',rating:96,style:'差し',speed:96,stamina:96,kick:100,start:88,mud:89,best:[1800,2400]},
-{name:'エリキング',rating:92,style:'差し',speed:93,stamina:95,kick:97,start:87,mud:91,best:[1800,2400]},
-{name:'ショウヘイ',rating:92,style:'先行',speed:94,stamina:95,kick:93,start:95,mud:89,best:[1800,2400]},
-{name:'メイショウタバル',rating:94,style:'逃げ',speed:96,stamina:94,kick:88,start:100,mud:97,best:[1800,2400]},
-{name:'ベラジオオペラ',rating:95,style:'先行',speed:96,stamina:94,kick:95,start:97,mud:91,best:[1800,2200]},
-{name:'ジャスティンパレス',rating:95,style:'差し',speed:93,stamina:100,kick:95,start:87,mud:92,best:[2200,3200]},
-{name:'アーバンシック',rating:94,style:'差し',speed:92,stamina:99,kick:96,start:86,mud:91,best:[2200,3200]},
-{name:'シンエンペラー',rating:94,style:'先行',speed:94,stamina:98,kick:93,start:95,mud:90,best:[2000,2500]},
-{name:'ドゥレッツァ',rating:95,style:'先行',speed:94,stamina:100,kick:95,start:94,mud:91,best:[2200,3200]},
-{name:'タスティエーラ',rating:94,style:'先行',speed:94,stamina:97,kick:94,start:95,mud:91,best:[2000,2500]},
-{name:'シャフリヤール',rating:95,style:'差し',speed:96,stamina:96,kick:98,start:88,mud:89,best:[1800,2500]},
-{name:'パンサラッサ',rating:95,style:'逃げ',speed:98,stamina:92,kick:89,start:100,mud:96,best:[1600,2200]},
-{name:'ジャックドール',rating:94,style:'逃げ',speed:96,stamina:94,kick:91,start:99,mud:92,best:[1800,2200]},
-{name:'ポタジェ',rating:92,style:'先行',speed:92,stamina:95,kick:91,start:95,mud:91,best:[1800,2200]},
-{name:'ジオグリフ',rating:93,style:'先行',speed:94,stamina:93,kick:93,start:96,mud:96,best:[1600,2200]},
-{name:'ドリームジャーニー',rating:95,style:'追込',speed:94,stamina:97,kick:100,start:78,mud:94,best:[1800,2500]},
-{name:'ナカヤマフェスタ',rating:94,style:'差し',speed:93,stamina:98,kick:96,start:87,mud:98,best:[2000,2500]},
-{name:'マツリダゴッホ',rating:94,style:'先行',speed:94,stamina:96,kick:93,start:96,mud:92,best:[2000,2500]},
-{name:'ラッキーライラック',rating:95,style:'先行',speed:96,stamina:95,kick:96,start:95,mud:92,best:[1600,2400]},
-{name:'サートゥルナーリア',rating:96,style:'先行',speed:98,stamina:94,kick:98,start:94,mud:91,best:[1800,2400]},
-{name:'ワールドプレミア',rating:94,style:'差し',speed:92,stamina:100,kick:95,start:85,mud:91,best:[2200,3200]},
-{name:'フィエールマン',rating:95,style:'差し',speed:93,stamina:100,kick:97,start:86,mud:92,best:[2200,3200]},
-{name:'ディープボンド',rating:93,style:'先行',speed:91,stamina:100,kick:91,start:96,mud:100,best:[2200,3200]},
-{name:'テーオーロイヤル',rating:94,style:'先行',speed:92,stamina:100,kick:93,start:95,mud:95,best:[2400,3400]},
-{name:'ブローザホーン',rating:94,style:'差し',speed:92,stamina:99,kick:97,start:85,mud:100,best:[2200,3200]}
+const ABILITIES=['speed','stamina','kick','start','mud'];
+const ABILITY_LABEL={speed:'スピード',stamina:'スタミナ',kick:'末脚',start:'スタート',mud:'道悪'};
+const COLORS=['#fff','#222','#e33','#176ad4','#f5d22d','#29a85a','#f08ac1','#f18222','#8e54ca','#69c7d7','#ddd','#7b4b25'];
+const VENUES={東京:{turn:'左'},中山:{turn:'右'},阪神:{turn:'右'},京都:{turn:'右'},中京:{turn:'左'},新潟:{turn:'左'},札幌:{turn:'右'},函館:{turn:'右'},福島:{turn:'右'},小倉:{turn:'右'}};
+const RACES=[
+{name:'フェブラリーステークス',distance:1600,venue:'東京'},
+{name:'高松宮記念',distance:1200,venue:'中京'},
+{name:'大阪杯',distance:2000,venue:'阪神'},
+{name:'桜花賞',distance:1600,venue:'阪神'},
+{name:'皐月賞',distance:2000,venue:'中山'},
+{name:'天皇賞（春）',distance:3200,venue:'京都'},
+{name:'NHKマイルカップ',distance:1600,venue:'東京'},
+{name:'ヴィクトリアマイル',distance:1600,venue:'東京'},
+{name:'オークス',distance:2400,venue:'東京'},
+{name:'日本ダービー',distance:2400,venue:'東京'},
+{name:'安田記念',distance:1600,venue:'東京'},
+{name:'宝塚記念',distance:2200,venue:'阪神'},
+{name:'スプリンターズステークス',distance:1200,venue:'中山'},
+{name:'秋華賞',distance:2000,venue:'京都'},
+{name:'菊花賞',distance:3000,venue:'京都'},
+{name:'天皇賞（秋）',distance:2000,venue:'東京'},
+{name:'エリザベス女王杯',distance:2200,venue:'京都'},
+{name:'マイルチャンピオンシップ',distance:1600,venue:'京都'},
+{name:'ジャパンカップ',distance:2400,venue:'東京'},
+{name:'チャンピオンズカップ',distance:1800,venue:'中京'},
+{name:'有馬記念',distance:2500,venue:'中山'}];
+const JOCKEYS=[
+{id:'take-yutaka',name:'武 豊',era:'現役',type:'天才肌',bonus:{speed:2,stamina:0,kick:1,start:1,mud:-1}},
+{id:'lemaire',name:'C.ルメール',era:'現役',type:'万能型',bonus:{speed:1,stamina:1,kick:2,start:0,mud:0}},
+{id:'kawada',name:'川田 将雅',era:'現役',type:'先行巧者',bonus:{speed:1,stamina:0,kick:0,start:2,mud:1}},
+{id:'tosaki',name:'戸崎 圭太',era:'現役',type:'安定型',bonus:{speed:1,stamina:1,kick:1,start:1,mud:0}},
+{id:'ikezoe',name:'池添 謙一',era:'現役',type:'大舞台型',bonus:{speed:0,stamina:0,kick:2,start:0,mud:1}},
+{id:'yokoyama-n',name:'横山 典弘',era:'現役',type:'戦術型',bonus:{speed:0,stamina:2,kick:1,start:-1,mud:1}},
+{id:'iwata-y',name:'岩田 康誠',era:'現役',type:'勝負型',bonus:{speed:1,stamina:0,kick:2,start:0,mud:1}},
+{id:'matsuyama',name:'松山 弘平',era:'現役',type:'積極型',bonus:{speed:1,stamina:1,kick:0,start:2,mud:-1}},
+{id:'sakai',name:'坂井 瑠星',era:'現役',type:'攻撃型',bonus:{speed:2,stamina:0,kick:0,start:2,mud:-1}},
+{id:'yokoyama-t',name:'横山 武史',era:'現役',type:'バランス型',bonus:{speed:1,stamina:1,kick:1,start:1,mud:0}},
+{id:'yokoyama-k',name:'横山 和生',era:'現役',type:'長距離型',bonus:{speed:0,stamina:2,kick:1,start:1,mud:0}},
+{id:'hamanaka',name:'浜中 俊',era:'現役',type:'瞬発型',bonus:{speed:1,stamina:-1,kick:2,start:1,mud:0}},
+{id:'kitamura-y',name:'北村 友一',era:'現役',type:'差し型',bonus:{speed:0,stamina:1,kick:2,start:0,mud:1}},
+{id:'wada',name:'和田 竜二',era:'現役',type:'粘り型',bonus:{speed:0,stamina:2,kick:0,start:1,mud:1}},
+{id:'miura',name:'三浦 皇成',era:'現役',type:'スピード型',bonus:{speed:2,stamina:0,kick:1,start:1,mud:-1}},
+{id:'tanabe',name:'田辺 裕信',era:'現役',type:'自在型',bonus:{speed:1,stamina:1,kick:1,start:0,mud:1}},
+{id:'uchida',name:'内田 博幸',era:'現役',type:'パワー型',bonus:{speed:0,stamina:1,kick:1,start:0,mud:2}},
+{id:'tsumura',name:'津村 明秀',era:'現役',type:'末脚型',bonus:{speed:0,stamina:0,kick:2,start:1,mud:1}},
+{id:'sugawara',name:'菅原 明良',era:'現役',type:'成長型',bonus:{speed:1,stamina:1,kick:1,start:1,mud:0}},
+{id:'nishimura',name:'西村 淳也',era:'現役',type:'先行型',bonus:{speed:1,stamina:1,kick:0,start:2,mud:0}},
+{id:'danno',name:'団野 大成',era:'現役',type:'勝負型',bonus:{speed:1,stamina:0,kick:2,start:1,mud:0}},
+{id:'sasaki',name:'佐々木 大輔',era:'現役',type:'積極型',bonus:{speed:1,stamina:1,kick:0,start:2,mud:0}},
+{id:'okabe',name:'岡部 幸雄',era:'レジェンド',type:'名人型',bonus:{speed:1,stamina:2,kick:1,start:0,mud:0}},
+{id:'shibata-m',name:'柴田 政人',era:'レジェンド',type:'剛腕型',bonus:{speed:0,stamina:2,kick:1,start:1,mud:0}},
+{id:'kawachi',name:'河内 洋',era:'レジェンド',type:'クラシック型',bonus:{speed:1,stamina:1,kick:2,start:0,mud:0}},
+{id:'minai',name:'南井 克巳',era:'レジェンド',type:'追込型',bonus:{speed:0,stamina:1,kick:2,start:-1,mud:2}},
+{id:'matoba',name:'的場 均',era:'レジェンド',type:'職人型',bonus:{speed:0,stamina:2,kick:1,start:0,mud:1}},
+{id:'tabara',name:'田原 成貴',era:'レジェンド',type:'天才型',bonus:{speed:1,stamina:-1,kick:2,start:1,mud:1}},
+{id:'ando',name:'安藤 勝己',era:'レジェンド',type:'豪腕型',bonus:{speed:1,stamina:1,kick:1,start:0,mud:2}},
+{id:'ebina',name:'蛯名 正義',era:'レジェンド',type:'大舞台型',bonus:{speed:0,stamina:1,kick:2,start:0,mud:1}},
+{id:'fukunaga',name:'福永 祐一',era:'レジェンド',type:'理論型',bonus:{speed:1,stamina:1,kick:2,start:0,mud:0}},
+{id:'shii',name:'四位 洋文',era:'レジェンド',type:'末脚型',bonus:{speed:0,stamina:0,kick:2,start:0,mud:1}},
+{id:'fuji',name:'藤田 伸二',era:'レジェンド',type:'勝負型',bonus:{speed:1,stamina:1,kick:1,start:1,mud:0}},
+{id:'matsunaga',name:'松永 幹夫',era:'レジェンド',type:'牝馬巧者',bonus:{speed:1,stamina:0,kick:2,start:1,mud:0}},
+{id:'yasuda',name:'安田 隆行',era:'レジェンド',type:'短距離型',bonus:{speed:2,stamina:-1,kick:1,start:2,mud:0}},
+{id:'nohirai',name:'野平 祐二',era:'歴史的名手',type:'万能型',bonus:{speed:1,stamina:1,kick:1,start:1,mud:0}},
+{id:'yasuda-t',name:'保田 隆芳',era:'歴史的名手',type:'クラシック型',bonus:{speed:0,stamina:2,kick:1,start:1,mud:0}},
+{id:'kaga',name:'加賀 武見',era:'歴史的名手',type:'闘志型',bonus:{speed:1,stamina:1,kick:1,start:0,mud:1}},
+{id:'detto-ri',name:'L.デットーリ',era:'海外名手',type:'世界級',bonus:{speed:1,stamina:1,kick:2,start:1,mud:-1}},
+{id:'moore',name:'R.ムーア',era:'海外名手',type:'剛腕型',bonus:{speed:1,stamina:1,kick:1,start:0,mud:2}},
+{id:'moreira',name:'J.モレイラ',era:'海外名手',type:'魔術師型',bonus:{speed:2,stamina:0,kick:2,start:1,mud:-1}},
+{id:'lane',name:'D.レーン',era:'海外名手',type:'万能型',bonus:{speed:1,stamina:1,kick:1,start:1,mud:0}},
+{id:'c-demuro',name:'C.デムーロ',era:'海外名手',type:'瞬発型',bonus:{speed:1,stamina:0,kick:2,start:1,mud:0}},
+{id:'peslier',name:'O.ペリエ',era:'海外名手',type:'大舞台型',bonus:{speed:1,stamina:1,kick:2,start:0,mud:0}}
 ];
-const venues={
-'東京':{turn:'左',shape:'oval',straight:526},'中山':{turn:'右',shape:'oval',straight:310},'阪神':{turn:'右',shape:'oval',straight:474},'京都':{turn:'右',shape:'oval',straight:404},'中京':{turn:'左',shape:'oval',straight:413},'新潟':{turn:'左',shape:'oval',straight:659}
+const CUSTOM_JOCKEY_TYPES={
+'バランス型':{speed:1,stamina:1,kick:1,start:1,mud:0},
+'スピード型':{speed:2,stamina:0,kick:1,start:1,mud:-1},
+'スタート型':{speed:1,stamina:0,kick:0,start:2,mud:1},
+'末脚型':{speed:0,stamina:0,kick:2,start:1,mud:1},
+'スタミナ型':{speed:0,stamina:2,kick:1,start:0,mud:1},
+'道悪型':{speed:0,stamina:1,kick:0,start:0,mud:2}
 };
-const races=[{name:'日本ダービー',distance:2400},{name:'有馬記念',distance:2500},{name:'天皇賞（秋）',distance:2000},{name:'安田記念',distance:1600},{name:'スプリンターズS',distance:1200},{name:'宝塚記念',distance:2200},{name:'天皇賞（春）',distance:3200},{name:'大阪杯',distance:2000},{name:'ジャパンC',distance:2400}];
-const colors=['#fff','#111','#d92727','#2668d8','#f0ca25','#31a85a','#ef7a18','#ef93bd','#7b3eb3','#26a9b8','#795548','#8bc34a'];
-function frameTextColor(number){return [2,3,4,6,8,9,11,12].includes(number)?'#fff':'#111'}
-let state={wallet:10000,raceNo:1,mode:'solo',isHost:false,roomCode:null,userId:crypto.randomUUID(),field:[],race:null,venue:'東京',going:'良',betType:'win',selection:[],stake:500,adjustTarget:null,seed:1,result:[],ticketOdds:0};
-let dbApi=null,roomUnsub=null;
-function init(){Object.keys(venues).forEach(v=>$('venue').add(new Option(v,v)));races.forEach((r,i)=>$('racePreset').add(new Option(`${r.name} 芝${r.distance}m`,i)));load();bind();initFirebase();}
-function bind(){
-$('themeBtn').onclick=toggleTheme;$('soloModeBtn').onclick=()=>openSetup('solo');$('hostModeBtn').onclick=()=>openSetup('host');$('joinModeBtn').onclick=()=>show('joinPanel');document.querySelectorAll('.back-home').forEach(b=>b.onclick=()=>show('homePanel'));
-$('generateBtn').onclick=generateRace;$('toBetBtn').onclick=()=>{renderOdds();show('betPanel')};$('rerollBtn').onclick=generateRace;
-document.querySelectorAll('.bet-tabs button').forEach(b=>b.onclick=()=>setBetType(b.dataset.bet));$('stake').oninput=updateTicket;$('submitBetBtn').onclick=submitBet;
-$('nextRaceBtn').onclick=()=>{state.raceNo++;state.result=[];state.selection=[];show('setupPanel')};$('resetBtn').onclick=()=>{state.wallet=10000;saveWallet();show('homePanel')};
-$('joinRoomBtn').onclick=joinRoom;$('hostStartBtn').onclick=hostStartOnline;$('copyRoomBtn').onclick=()=>navigator.clipboard?.writeText(state.roomCode||'');
-document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
-}
-function show(id){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));$(id).classList.add('active');window.scrollTo({top:0,behavior:'smooth'});}function openSetup(mode){state.mode=mode;state.isHost=mode==='host';$('setupModeLabel').textContent=mode==='solo'?'SOLO':'ONLINE HOST';show('setupPanel')}
-function load(){state.wallet=+(localStorage.getItem('umaumawallet')||10000);$('wallet').textContent=state.wallet.toLocaleString('ja-JP');document.body.dataset.theme=localStorage.getItem('kawakamitheme')||'dark';updateThemeBtn()}function saveWallet(){localStorage.setItem('umaumawallet',state.wallet);$('wallet').textContent=state.wallet.toLocaleString('ja-JP')}function toggleTheme(){document.body.dataset.theme=document.body.dataset.theme==='dark'?'light':'dark';localStorage.setItem('kawakamitheme',document.body.dataset.theme);updateThemeBtn()}function updateThemeBtn(){$('themeBtn').textContent=document.body.dataset.theme==='dark'?'☀ 明るい版':'☾ かっこいい版'}
-function seeded(seed){let x=seed>>>0;return()=>((x=(x*1664525+1013904223)>>>0)/4294967296)}
-function generateRace(){state.venue=$('venue').value;state.race=races[+$('racePreset').value];state.going=$('going').value;state.seed=Math.floor(Math.random()*2**31);const rnd=seeded(state.seed),size=+$('fieldSize').value;const pool=[...horses].sort(()=>rnd()-.5).slice(0,size);state.field=pool.map((h,i)=>({...h,number:i+1,adj:{speed:0,stamina:0,kick:0,start:0,mud:0}}));recalculate();drawGuide();show('guidePanel');if(state.mode==='host'&&dbApi)createRoom();}
-function effective(h,key){return h[key]+(h.adj?.[key]||0)}
-function recalculate(){const D=state.race.distance;const goingPenalty={良:0,稍重:1,重:2.5,不良:4}[state.going];let raw=state.field.map(h=>{const dist=h.best[0]<=D&&D<=h.best[1]?5:-Math.min(8,Math.abs(D-(D<h.best[0]?h.best[0]:h.best[1]))/150);const mud=(effective(h,'mud')-90)*goingPenalty*.08;const base=h.rating*.55+effective(h,'speed')*.18+effective(h,'stamina')*.12+effective(h,'kick')*.1+effective(h,'start')*.05+dist+mud;return Math.exp((base-90)/8)});const sum=raw.reduce((a,b)=>a+b,0);state.field.forEach((h,i)=>{h.winProb=raw[i]/sum;h.odds=Math.max(1.3,Math.round((.8/h.winProb)*10)/10)});}
-function roundedRect(ctx,x,y,w,h,r){
- const rr=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+rr,y);ctx.arcTo(x+w,y,x+w,y+h,rr);ctx.arcTo(x+w,y+h,x,y+h,rr);ctx.arcTo(x,y+h,x,y,rr);ctx.arcTo(x,y,x+w,y,rr);ctx.closePath();
-}
-function drawCourse(ctx,markers=[],progress=0,guide=false){
- const w=ctx.canvas.width,h=ctx.canvas.height;ctx.clearRect(0,0,w,h);
- const startX=w*.105,goalX=w*.895,top=h*.18,bottom=h*.82,trackH=bottom-top;
- const laneCount=Math.max(8,markers.length||10),laneH=trackH/laneCount;
- const bg=ctx.createLinearGradient(0,0,0,h);bg.addColorStop(0,'#6eb0dd');bg.addColorStop(.38,'#9ed2ef');bg.addColorStop(.39,'#245a2c');bg.addColorStop(1,'#123b1d');ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
- // 芝の直線コース
- ctx.fillStyle='#eee4c8';roundedRect(ctx,startX-26,top-24,(goalX-startX)+52,trackH+48,28);ctx.fill();
- const turf=ctx.createLinearGradient(0,top,0,bottom);turf.addColorStop(0,'#4caa59');turf.addColorStop(1,'#28773b');ctx.fillStyle=turf;roundedRect(ctx,startX-14,top-13,(goalX-startX)+28,trackH+26,22);ctx.fill();
- ctx.strokeStyle='rgba(255,255,255,.42)';ctx.lineWidth=2;
- for(let i=1;i<laneCount;i++){const y=top+i*laneH;ctx.beginPath();ctx.moveTo(startX,y);ctx.lineTo(goalX,y);ctx.stroke()}
- // START（左）
- ctx.strokeStyle='#ffe22e';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(startX,top-20);ctx.lineTo(startX,bottom+20);ctx.stroke();
- // GOAL（右・白黒）
- const cell=Math.max(10,Math.min(18,laneH*.42));for(let row=0;row<Math.ceil(trackH/cell);row++){for(let col=0;col<2;col++){ctx.fillStyle=(row+col)%2?'#111':'#fff';ctx.fillRect(goalX+col*cell-cell,top+row*cell,cell,cell)}}
- if(guide){markerText(ctx,'START',startX,top-62,'center');markerText(ctx,'GOAL',goalX,bottom+62,'center');
-   ctx.fillStyle='rgba(0,0,0,.62)';roundedRect(ctx,w*.25,h*.035,w*.5,h*.09,16);ctx.fill();ctx.fillStyle='#fff';ctx.font=`800 ${Math.max(22,w*.028)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('START から GOAL へ一直線',w*.5,h*.08);
- }
- markers.forEach(m=>{
-   const p=Math.max(0,Math.min(1,m.p));const x=startX+(goalX-startX)*p;
-   const laneIndex=Math.max(0,Math.min(laneCount-1,m.lane));const y=top+(laneIndex+.5)*laneH;
-   const r=Math.max(13,Math.min(21,w*.018));
-   const isChosen=state.selection[0]===m.number;
-   if(isChosen){ctx.save();ctx.shadowColor='#ffe36b';ctx.shadowBlur=22;ctx.fillStyle='rgba(255,226,46,.35)';ctx.beginPath();ctx.arc(x,y,r+8,0,Math.PI*2);ctx.fill();ctx.restore()}
-   ctx.fillStyle=colors[(m.number-1)%colors.length];ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.strokeStyle=isChosen?'#ffe22e':'#fff';ctx.lineWidth=isChosen?6:3;ctx.stroke();
-   ctx.fillStyle=frameTextColor(m.number);ctx.font=`900 ${Math.max(14,r*.95)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(m.number,x,y);
- });
- ctx.textAlign='start';ctx.textBaseline='alphabetic';return {startX,goalX,top,bottom};
-}
-function markerText(ctx,text,x,y,align='center'){
- ctx.textAlign=align;ctx.textBaseline='middle';ctx.font=`900 ${Math.max(22,ctx.canvas.width*.027)}px sans-serif`;ctx.lineWidth=7;ctx.strokeStyle='#101010';ctx.fillStyle='#ffe52e';ctx.strokeText(text,x,y);ctx.fillText(text,x,y);
-}
-function drawGuide(){drawCourse($('guideCanvas').getContext('2d'),[],0,true);$('guideTitle').textContent=`${state.race.name}・${state.venue} 芝${state.race.distance}m`;$('guideDescription').textContent=`ゲームでは見やすさを優先した直線コースで表現します。左のSTARTから右のGOALまで、約30秒かけて滑らかに進みます。`;}
-function setBetType(){state.betType='win';state.selection=[];$('selectionHelp').textContent='1頭選択してください';renderOdds();updateTicket()}
-function renderOdds(){recalculate();$('raceNo').textContent=`第${state.raceNo}競走`;$('raceTitle').textContent=state.race.name;$('conditions').textContent=`${state.venue} 芝${state.race.distance}m・${state.going}・${venues[state.venue].turn}回り`;$('oddsBoard').innerHTML=state.field.map(h=>`<button class="horse-row ${state.selection.includes(h.number)?'selected':''}" data-n="${h.number}"><span class="number" style="background:${colors[(h.number-1)%colors.length]};color:${frameTextColor(h.number)}">${h.number}</span><span><b>${h.name}</b><span class="horse-meta">${h.style}　能力${h.rating}</span></span><span class="odds"><b>${h.odds.toFixed(1)}</b><span class="horse-meta">単勝</span></span></button>`).join('');document.querySelectorAll('.horse-row').forEach(el=>el.onclick=()=>chooseHorse(+el.dataset.n));}
-function chooseHorse(n){state.selection=state.selection[0]===n?[]:[n];state.adjustTarget=n;renderOdds();renderParamEditor();updateTicket()}
-function renderParamEditor(){const h=state.field.find(x=>x.number===state.adjustTarget);if(!h){$('parameterEditor').innerHTML='<p class="note">出走馬をタップすると編集できます。</p>';return}const labels={speed:'スピード',stamina:'スタミナ',kick:'末脚',start:'スタート',mud:'道悪'};$('parameterEditor').innerHTML=`<h4>${h.number}番 ${h.name}</h4>${Object.keys(labels).map(k=>`<div class="param-row"><span>${labels[k]}</span><button data-k="${k}" data-d="-1">−</button><span class="param-value">${h.adj[k]>=0?'+':''}${h.adj[k]}（${effective(h,k)}）</span><button data-k="${k}" data-d="1">＋</button></div>`).join('')}<div id="paramTotal" class="param-total ${Object.values(h.adj).reduce((a,b)=>a+b,0)===0?'ok':'bad'}">調整合計：${Object.values(h.adj).reduce((a,b)=>a+b,0)}（レース開始時は0にしてください）</div>`;document.querySelectorAll('.param-row button').forEach(b=>b.onclick=()=>adjustParam(h,b.dataset.k,+b.dataset.d));}
-function adjustParam(h,k,d){const next=h.adj[k]+d;if(next<-3||next>3)return;h.adj[k]=next;const total=Object.values(h.adj).reduce((a,b)=>a+b,0);if(Math.abs(total)>3){h.adj[k]-=d;return}recalculate();renderOdds();renderParamEditor();updateTicket()}
-function comboOdds(){const h=state.field.find(x=>x.number===state.selection[0]);return h?.odds||0}
-function updateTicket(){state.betType='win';state.stake=Math.max(0,+$('stake').value||0);const balanced=state.field.every(h=>Object.values(h.adj||{}).reduce((a,b)=>a+b,0)===0),ok=state.selection.length===1&&state.stake>=100&&state.stake<=state.wallet&&balanced;const n=state.selection[0],h=state.field.find(x=>x.number===n);$('selectedTicket').textContent=h?`${n} ${h.name}`:'未選択';state.ticketOdds=comboOdds();$('estimatedOdds').textContent=state.ticketOdds?`${state.ticketOdds.toFixed(1)}倍`:'--';$('estimatedPayout').textContent=state.ticketOdds?`${Math.floor(state.stake*state.ticketOdds).toLocaleString('ja-JP')}pt`:'--';$('submitBetBtn').disabled=!ok;$('submitBetBtn').textContent=!balanced?'能力調整の合計を0にしてください':(state.mode==='solo'?'単勝でレース開始':'単勝で投票');}
-function submitBet(){
- if($('submitBetBtn').disabled)return;
- state.wallet-=state.stake;saveWallet();
- if(state.mode==='solo')countdownThenRace(Date.now()+3200);else submitOnlineBet();
-}
-function enterRaceMode(){document.body.classList.add('race-running')}
-function leaveRaceMode(){document.body.classList.remove('race-running')}
-function countdownThenRace(startAt){
- if($('countdownPanel').classList.contains('active')||$('racePanel').classList.contains('active'))return;
- show('countdownPanel');
- const tick=()=>{const left=Math.ceil((startAt-Date.now())/1000);$('countdownNumber').textContent=left>0?left:'START';if(left<=0){setTimeout(()=>{enterRaceMode();show('racePanel');runSimulation()},220);return}setTimeout(tick,100)};tick();
-}
-function updateChosenHorseBanner(){
- const h=state.field.find(x=>x.number===state.selection[0]);
- const banner=$('chosenHorseBanner');
- if(!banner)return;
- if(!h){banner.hidden=true;return}
- banner.hidden=false;
- const number=$('chosenHorseNumber');
- number.textContent=`${h.number}番`;
- number.style.background=colors[(h.number-1)%colors.length];
- number.style.color=frameTextColor(h.number);
- $('chosenHorseName').textContent=`${h.name}です`;
-}
-function runSimulation(){
- const canvas=$('track'),ctx=canvas.getContext('2d'),D=state.race.distance,rnd=seeded(state.seed);
- const DISPLAY_DURATION=30,officialSecs=estimateRaceSeconds(D);
- let wallStart=null,previousTs=null,finished=false,lastCall=-1,stripNodes=null;
- // 馬券の選択は結果に一切影響させない。能力・適性・当日の乱数だけで着順を決める。
- const runners=state.field.map((h,i)=>{
-  const ability=(h.winProb||1/state.field.length)*100;
-  const dayForm=(rnd()-.5)*18;
-  const score=ability+dayForm+(effective(h,'speed')-93)*.45+(effective(h,'stamina')-92)*.20;
-  const styleBias=h.style==='逃げ'?.034:h.style==='先行'?.018:h.style==='差し'?-0.010:-0.022;
-  return {...h,p:0,displayP:0,lane:i,finish:null,score,
-   phase1:rnd()*Math.PI*2,phase2:rnd()*Math.PI*2,phase3:rnd()*Math.PI*2,
-   amp1:.034+rnd()*.026,amp2:.018+rnd()*.022,amp3:.010+rnd()*.014,
-   styleBias,currentKmh:0};
- });
- const ranked=[...runners].sort((a,b)=>b.score-a.score);
- ranked.forEach((h,rank)=>{
-  h.finishWall=29.20+rank*.052+rnd()*.035;
-  h.officialFinish=officialSecs+rank*.10+rnd()*.075;
-  h.finalRank=rank;
- });
- $('liveTitle').textContent=state.race.name;
- $('liveConditions').textContent=`${state.venue} 芝${D}m・${state.going}・約30秒レース`;
- updateChosenHorseBanner();
- stripNodes=drawPositionStrip(runners,null);
-
- function smoothstep(x){x=Math.max(0,Math.min(1,x));return x*x*(3-2*x)}
- function frame(ts){
-  if(wallStart===null){wallStart=ts;previousTs=ts}
-  const dt=Math.min(.05,Math.max(.001,(ts-previousTs)/1000));previousTs=ts;
-  const wall=Math.min(32,(ts-wallStart)/1000);
-  runners.forEach(h=>{
-   if(h.finish!==null){h.p=1;h.displayP+=(1-h.displayP)*(1-Math.exp(-10*dt));return}
-   const t=Math.max(0,Math.min(1,wall/h.finishWall));
-   const envelope=Math.sin(Math.PI*t);
-   const battleWave=(Math.sin(t*Math.PI*7+h.phase1)*h.amp1+
-                     Math.sin(t*Math.PI*13+h.phase2)*h.amp2+
-                     Math.sin(t*Math.PI*19+h.phase3)*h.amp3)*envelope;
-   const earlyStyle=h.style==='逃げ'?h.styleBias*(1-smoothstep(t/.60))*envelope:
-                    h.style==='先行'?h.styleBias*(1-t)*envelope:0;
-   const lateStyle=h.style==='差し'?.034*smoothstep((t-.34)/.58)*envelope:
-                   h.style==='追込'?.052*smoothstep((t-.45)/.50)*envelope:0;
-   const settle=smoothstep((t-.86)/.14);
-   const rankOffset=((runners.length-1-h.finalRank)-(runners.length-1)/2)*.0017*settle;
-   let target=t+battleWave+earlyStyle+lateStyle+rankOffset;
-   target=Math.max(0,Math.min(.9995,target));
-   // 数字が飛ばないよう、時間ベースの追従速度で補間する。
-   h.p=Math.max(h.p,target);
-   const follow=1-Math.exp(-7.5*dt);
-   h.displayP+=Math.max(0,h.p-h.displayP)*follow;
-   const surge=Math.max(0,(h.p-h.displayP))*430;
-   const phaseSpeed=53+9*Math.sin(Math.PI*t)+(effective(h,'speed')-93)*.30+surge;
-   h.currentKmh=Math.max(46,Math.min(73,phaseSpeed));
-   if(wall>=h.finishWall){h.p=1;h.finish=h.officialFinish}
-  });
-  const order=[...runners].sort((a,b)=>b.displayP-a.displayP || b.score-a.score);
-  drawCourse(ctx,runners.map(h=>({...h,p:h.displayP})),order[0].displayP,false);
-  drawPositionStrip(runners,stripNodes);
-  const leaderProgress=order[0].displayP;
-  $('remaining').textContent=`${Math.max(0,Math.round(D*(1-leaderProgress)/50)*50)}m`;
-  $('leader').textContent=`先頭：${order[0].number}番 ${order[0].name}`;
-  $('speedKmh').textContent=`${order[0].currentKmh.toFixed(1)}km/h`;
-  $('elapsed').textContent=formatTime(officialSecs*Math.min(1,wall/DISPLAY_DURATION));
-  const call=Math.min(9,Math.floor(leaderProgress*10));
-  if(call!==lastCall){lastCall=call;$('commentary').textContent=comment(call,order,D)}
-  if(runners.every(r=>r.finish!==null)||wall>31.4){
-   if(!finished){finished=true;state.result=[...runners].sort((a,b)=>(a.finish??999)-(b.finish??999));setTimeout(showResult,700)}
-   return;
-  }
-  requestAnimationFrame(frame);
- }
- requestAnimationFrame(frame);
-}
-function estimateRaceSeconds(D){const table={1200:68,1600:94,2000:120,2200:132,2400:145,2500:151,3200:198};return table[D]||D/16.5}
-function drawPositionStrip(runners,nodes){
- const strip=$('positionStrip');
- if(!nodes||nodes.length!==runners.length){
-  strip.innerHTML='';
-  nodes=runners.map(h=>{
-   const el=document.createElement('span');el.className=`pos-ball track-pos${state.selection[0]===h.number?' chosen':''}`;el.textContent=h.number;
-   el.style.background=colors[(h.number-1)%colors.length];el.style.color=frameTextColor(h.number);
-   strip.appendChild(el);return el;
-  });
- }
- runners.forEach((h,i)=>{
-  const progress=Math.max(0,Math.min(1,h.displayP??h.p));
-  // CSSのleft固定を使わず、transformだけを毎フレーム更新する。
-  nodes[i].style.setProperty('--race-x',`${7+progress*86}%`);
-  nodes[i].style.zIndex=String(10+Math.round(progress*100));
-  nodes[i].title=`進行率${Math.round(progress*100)}%`;
- });
- return nodes;
-}
-function comment(c,o,D){
- const sel=state.selection[0],sh=o.find(h=>h.number===sel),pos=sh?o.indexOf(sh)+1:'--';
- const lines=[
-  `スタート！ ${o[0].number}番${o[0].name}が飛び出した！`,
-  `${o[1].number}番${o[1].name}が一気に並びかける！`,
-  `早くも先頭交代！ ${o[0].number}番が前へ！`,
-  `中盤に入り各馬が激しく位置を入れ替える！`,
-  `予想した馬は現在${pos}番手。まだまだ大混戦！`,
-  `残り${Math.round(D*.45/100)*100}m！ 外から数頭が一気に進出！`,
-  `先頭がまた替わった！ ${o[0].number}番${o[0].name}！`,
-  `最後の直線！ ${o[0].number}番と${o[1].number}番が並んだ！`,
-  `残り200m！ 後方から${o[Math.min(2,o.length-1)].number}番も猛追！`,
-  `ゴール前！ ${o[0].number}番${o[0].name}がわずかに先頭！`
- ];
- return lines[Math.min(c,lines.length-1)];
-}
-function hitTicket(){return state.result[0]?.number===state.selection[0]}
-function showResult(){leaveRaceMode();show('resultPanel');const hit=hitTicket(),pay=hit?Math.floor(state.stake*state.ticketOdds):0;if(hit)state.wallet+=pay;saveWallet();$('finishList').innerHTML=state.result.map((h,i)=>`<div class="finish-row"><span class="rank">${i+1}着</span><span class="number" style="background:${colors[(h.number-1)%colors.length]};color:${frameTextColor(h.number)}">${h.number}</span><span><b>${h.name}</b><span class="horse-meta">${h.style}</span></span><b>${formatTime(h.finish||0)}</b></div>`).join('');const label='単勝';$('payout').className=`payout ${hit?'win':'lose'}`;$('payout').innerHTML=hit?`${label} 的中！<strong>+${pay.toLocaleString('ja-JP')} pt</strong>購入 ${state.stake.toLocaleString('ja-JP')}pt × ${state.ticketOdds.toFixed(1)}倍`:`${label} 不的中<strong>-${state.stake.toLocaleString('ja-JP')} pt</strong>勝ち馬：${state.result[0].number}番 ${state.result[0].name}`;}
-function formatTime(s){return `${Math.floor(s/60)}:${(s%60).toFixed(1).padStart(4,'0')}`}
-async function initFirebase(){const ok=firebaseConfig.apiKey&&firebaseConfig.databaseURL&&firebaseConfig.projectId;if(!ok){$('onlineStatus').textContent='オンライン機能：Firebase設定後に利用できます';return}try{const appMod=await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js'),dbMod=await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js');const app=appMod.initializeApp(firebaseConfig),db=dbMod.getDatabase(app);dbApi={...dbMod,db};$('onlineStatus').textContent='オンライン機能：接続済み'}catch(e){console.error(e);$('onlineStatus').textContent='オンライン機能：接続エラー'}}
-async function createRoom(){state.roomCode=String(Math.floor(100000+Math.random()*900000));const data={status:'betting',race:{venue:state.venue,going:state.going,race:state.race,field:state.field,seed:state.seed,raceNo:state.raceNo},players:{[state.userId]:{name:'主催者',isHost:true,ready:false}}};await dbApi.set(dbApi.ref(dbApi.db,`rooms/${state.roomCode}`),data);subscribeRoom();renderLobby(data)}
-function renderLobby(room){show('lobbyPanel');$('roomCodeDisplay').textContent=state.roomCode;$('lobbyRaceTitle').textContent=state.race.name;$('lobbyConditions').textContent=`${state.venue} 芝${state.race.distance}m・${state.going}`;const ps=Object.values(room.players||{});$('participantList').innerHTML=ps.map(p=>`<div class="participant"><b>${escapeHtml(p.name)}</b><span>${p.ready?'投票完了':'選択中'}</span></div>`).join('');$('hostStartBtn').disabled=!ps.every(p=>p.ready)}
-async function joinRoom(){if(!dbApi){$('joinMessage').textContent='Firebase設定が必要です。';return}const code=$('roomCodeInput').value.trim(),name=$('joinName').value.trim()||'ゲスト';const snap=await dbApi.get(dbApi.ref(dbApi.db,`rooms/${code}`));if(!snap.exists()){$('joinMessage').textContent='ルームが見つかりません。';return}state.roomCode=code;state.mode='online';state.isHost=false;applyRoom(snap.val().race);await dbApi.set(dbApi.ref(dbApi.db,`rooms/${code}/players/${state.userId}`),{name,isHost:false,ready:false});subscribeRoom();drawGuide();show('guidePanel')}
-function applyRoom(r){state.venue=r.venue;state.going=r.going;state.race=r.race;state.field=r.field;state.seed=r.seed;state.raceNo=r.raceNo}
-async function submitOnlineBet(){await dbApi.set(dbApi.ref(dbApi.db,`rooms/${state.roomCode}/players/${state.userId}/bet`),{type:state.betType,selection:state.selection,stake:state.stake,odds:state.ticketOdds});await dbApi.set(dbApi.ref(dbApi.db,`rooms/${state.roomCode}/players/${state.userId}/ready`),true);$('waitingTicket').textContent=$('selectedTicket').textContent;$('waitingText').textContent=`ルーム ${state.roomCode}`;show('waitingPanel')}
-function subscribeRoom(){if(roomUnsub)roomUnsub();roomUnsub=dbApi.onValue(dbApi.ref(dbApi.db,`rooms/${state.roomCode}`),snap=>{if(!snap.exists())return;const room=snap.val();if(state.isHost)renderLobby(room);if(room.status==='countdown'&&room.startAt&&!$('racePanel').classList.contains('active')&&!$('countdownPanel').classList.contains('active'))countdownThenRace(room.startAt)})}
-async function hostStartOnline(){await dbApi.update(dbApi.ref(dbApi.db,`rooms/${state.roomCode}`),{status:'countdown',startAt:Date.now()+5000})}
+const LEGENDS=[
+['イクイノックス',100,'先行',100,99,99,94,92,1800,2500],['ディープインパクト',100,'追込',100,98,100,88,90,1800,3200],['オルフェーヴル',99,'追込',98,100,99,83,96,2000,3200],['アーモンドアイ',100,'差し',100,94,100,93,90,1600,2400],['キタサンブラック',99,'逃げ',96,100,94,99,93,2000,3200],['コントレイル',98,'差し',98,97,99,91,89,1800,3000],['ジェンティルドンナ',98,'先行',98,98,97,95,92,1800,2500],['ウオッカ',98,'差し',99,93,99,90,90,1600,2400],['ダイワスカーレット',98,'逃げ',97,97,95,99,93,1600,2500],['ロードカナロア',98,'先行',100,80,99,98,94,1000,1600],['エルコンドルパサー',98,'先行',97,98,97,95,97,1600,2500],['テイエムオペラオー',98,'先行',95,100,96,96,95,2000,3200],['ナリタブライアン',98,'先行',98,99,98,94,94,1800,3200],['シンボリルドルフ',98,'先行',97,100,96,97,93,2000,3200],['トウカイテイオー',97,'先行',98,96,98,94,91,1800,2500],['スペシャルウィーク',97,'差し',96,99,97,89,92,2000,3200],['グラスワンダー',97,'先行',98,96,98,94,95,1600,2500],['サイレンススズカ',97,'逃げ',100,91,96,100,92,1600,2200],['メジロマックイーン',97,'先行',94,100,93,96,96,2400,3200],['タイキシャトル',97,'先行',100,85,98,97,95,1200,1600],['クロフネ',97,'先行',99,92,98,96,98,1400,2100],['ゴールドシップ',97,'追込',93,100,97,75,98,2200,3200],['ブエナビスタ',97,'差し',97,96,100,87,92,1600,2400],['モーリス',97,'先行',99,91,99,95,94,1600,2000],['グランアレグリア',97,'差し',100,86,100,92,91,1200,1600],['ドウデュース',97,'差し',98,96,99,90,91,1800,2500],['リバティアイランド',97,'差し',98,95,99,91,90,1600,2400],['タイトルホルダー',96,'逃げ',95,100,92,99,95,2200,3200],['エフフォーリア',96,'先行',97,96,97,94,91,1800,2500],['ソダシ',95,'先行',97,89,95,96,95,1400,2000],['デアリングタクト',96,'差し',96,96,98,88,96,1600,2400],['シュネルマイスター',95,'差し',98,87,98,89,91,1400,1800],['パンサラッサ',95,'逃げ',98,91,91,100,93,1600,2000],['ジャスタウェイ',96,'差し',99,92,100,89,90,1600,2200],['ハーツクライ',96,'差し',96,98,98,88,92,2000,2500],['キングカメハメハ',97,'先行',98,96,97,96,94,1600,2400],['ゼンノロブロイ',96,'先行',96,98,96,95,92,2000,2500],['アグネスタキオン',97,'先行',99,94,99,94,96,1800,2400],['マンハッタンカフェ',96,'差し',94,100,97,86,94,2400,3200],['ナリタトップロード',95,'先行',94,99,94,95,94,2200,3200],['エアグルーヴ',96,'先行',96,96,97,94,93,1800,2400],['マヤノトップガン',96,'自在',96,99,97,91,95,2000,3200],['ビワハヤヒデ',96,'先行',96,100,95,97,94,2000,3200],['ミホノブルボン',96,'逃げ',97,97,92,100,94,1800,3000],['メジロライアン',94,'先行',94,97,94,95,93,2000,2500],['オグリキャップ',98,'先行',98,97,98,96,96,1600,2500],['タマモクロス',97,'差し',96,99,98,88,97,2000,3200],['スーパークリーク',96,'先行',94,100,94,95,96,2400,3200],['イナリワン',96,'差し',95,100,97,87,96,2200,3200],['ミスターシービー',96,'追込',96,98,99,82,91,1800,3200],['カツラギエース',94,'逃げ',94,96,92,99,93,1800,2500],['ハイセイコー',95,'先行',95,97,94,96,96,1600,2500],['シンザン',98,'先行',97,100,96,96,98,1800,3200],['セントライト',96,'先行',95,100,94,96,95,1800,3200],['テンポイント',97,'先行',96,100,96,97,95,2000,3200],['トウショウボーイ',96,'逃げ',98,94,95,99,93,1600,2500],['マルゼンスキー',98,'逃げ',100,93,98,100,94,1400,2400],['シービークロス',94,'追込',94,97,97,83,95,1800,2600],['ニホンピロウイナー',95,'先行',99,84,97,98,94,1200,1600],['サクラバクシンオー',96,'逃げ',100,78,98,100,94,1000,1400],['ノースフライト',95,'差し',99,85,98,91,93,1200,1600],['デュランダル',96,'追込',99,83,100,82,92,1200,1600],['カレンチャン',95,'先行',99,80,96,99,94,1000,1400],['ストレイトガール',94,'差し',98,82,97,91,93,1000,1600],['アドマイヤムーン',96,'差し',97,94,98,89,96,1600,2400],['スイープトウショウ',95,'追込',95,93,100,80,95,1600,2400],['ダンスインザムード',94,'先行',96,91,95,95,92,1600,2000],['ラインクラフト',94,'先行',97,87,96,96,91,1400,1800],['シーザリオ',97,'差し',98,95,99,89,93,1800,2400],['エピファネイア',97,'先行',98,98,97,92,95,2000,3000],['サートゥルナーリア',96,'先行',98,93,98,94,90,1800,2400],['ラヴズオンリーユー',96,'差し',97,95,98,90,92,1800,2400],['クロノジェネシス',97,'先行',96,98,97,94,99,2000,2500],['レイパパレ',94,'逃げ',96,93,94,98,98,1800,2200],['スタニングローズ',93,'先行',94,93,93,96,92,1800,2200],['スターズオンアース',96,'差し',97,96,98,88,92,1800,2500],['ナミュール',95,'差し',98,89,99,87,91,1400,2000],['セリフォス',95,'差し',99,85,98,90,91,1400,1800],['ジャンタルマンタル',96,'先行',99,89,97,97,92,1400,2000],['クロワデュノール',97,'先行',98,97,97,96,92,1800,2500],['ベラジオオペラ',95,'先行',96,95,95,96,93,1800,2200],['レガレイラ',96,'差し',97,96,99,87,94,1800,2500],['ドゥレッツァ',96,'先行',96,99,96,94,93,2200,3200],['ジャスティンパレス',95,'差し',95,99,97,88,92,2200,3200],['ブローザホーン',94,'差し',94,98,97,85,99,2200,3200],['テーオーロイヤル',95,'先行',94,100,95,93,96,2400,3400],['ソウルラッシュ',95,'差し',98,88,98,89,98,1400,1800],['ロマンチックウォリアー',98,'先行',98,97,98,96,95,1600,2200],['ウシュバテソーロ',97,'追込',96,98,100,82,98,1800,2400],['レモンポップ',97,'先行',99,93,96,99,97,1200,1800],['ホッコータルマエ',96,'先行',95,98,95,96,98,1800,2400],['コパノリッキー',96,'逃げ',97,95,94,99,97,1600,2200],['ヴァーミリアン',96,'先行',95,98,96,95,98,1800,2400],['カネヒキリ',96,'先行',97,96,96,96,97,1600,2200],['アドマイヤドン',95,'先行',95,97,95,96,96,1600,2200],['トランセンド',95,'逃げ',96,96,93,99,97,1600,2200],['スマートファルコン',96,'逃げ',98,96,94,100,98,1600,2200],['インティ',94,'逃げ',97,92,92,100,96,1600,2000],['オジュウチョウサン',96,'先行',92,100,94,96,99,2400,4200]
+].map(x=>({name:x[0],rating:x[1],style:x[2]==='自在'?'先行':x[2],speed:x[3],stamina:x[4],kick:x[5],start:x[6],mud:x[7],best:[x[8],x[9]]}));
+const state={screen:'home',history:[],mode:'solo',wallet:+localStorage.getItem('kawakami-wallet')||10000,player:null,points:{speed:0,stamina:0,kick:0,start:0,mud:0},raceNo:1,venue:'東京',race:RACES[9],going:'良',fieldSize:10,field:[],betType:'win',selection:null,stake:500,result:[],seed:Date.now(),peer:null,hostConn:null,connections:new Map(),members:new Map(),roomCode:'',isHost:false,racePayload:null,replay:false,selectedJockeyId:'take-yutaka',raceRuntime:null,whipSeen:new Set(),partyEntries:[],partyIndex:0,partyVoice:true};
 function escapeHtml(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-init();
+function normalizeCode(s){return String(s||'').trim().toUpperCase().replace(/[^A-Z0-9-]/g,'').slice(0,12)}
+function saveWallet(){localStorage.setItem('kawakami-wallet',state.wallet);$('wallet').textContent=state.wallet.toLocaleString('ja-JP')}
+function show(id,push=true){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');if(push&&state.screen!==id)state.history.push(state.screen);state.screen=id;$('backBtn').hidden=id==='home'||id==='race'||id==='countdown';scrollTo(0,0)}
+function goBack(){const prev=state.history.pop();if(prev)show(prev,false);else show('home',false)}
+function seeded(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function setupSelects(){for(const id of ['hostVenue','soloVenue','partyVenue'])$(id).innerHTML=Object.keys(VENUES).map(v=>`<option>${v}</option>`).join('');for(const id of ['hostRace','soloRace','partyRace'])$(id).innerHTML=RACES.map((r,i)=>`<option value="${i}" ${i===9?'selected':''}>${r.name}（${r.distance}m）</option>`).join('');$('hostVenue').value='東京';$('soloVenue').value='東京';$('partyVenue').value='東京';$('customJockeyType').innerHTML=Object.keys(CUSTOM_JOCKEY_TYPES).map(x=>`<option>${x}</option>`).join('')}
+function renderAbility(){const used=Object.values(state.points).reduce((a,b)=>a+b,0);$('pointsLeft').textContent=10-used;$('abilityEditor').innerHTML=ABILITIES.map(k=>{const n=90+state.points[k];return `<div class="ability-row"><b>${ABILITY_LABEL[k]}</b><button data-k="${k}" data-d="-1">−</button><div><div class="score">${n}</div><div class="ability-bar"><i style="width:${n}%"></i></div></div><button data-k="${k}" data-d="1">＋</button></div>`}).join('');document.querySelectorAll('.ability-row button').forEach(b=>b.onclick=()=>{const k=b.dataset.k,d=+b.dataset.d,used=Object.values(state.points).reduce((a,c)=>a+c,0);if(d>0&&used>=10)return;if(d<0&&state.points[k]<=0)return;state.points[k]+=d;renderAbility()})}
+function createPlayer(){const name=$('playerName').value.trim(),horse=$('horseName').value.trim(),used=Object.values(state.points).reduce((a,b)=>a+b,0);if(!name||!horse){$('createError').textContent='表示名と馬の名前を入力してな。';return null}if(used!==10){$('createError').textContent='追加10ポイントを全部使い切ってな。';return null}$('createError').textContent='';const jockeyName=$('customJockeyName').value.trim();if(!jockeyName){$('createError').textContent='オンライン騎手の名前も入力してな。';return null}const jt=$('customJockeyType').value;return{id:crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random(),name,horse,style:$('horseStyle').value,abilities:Object.fromEntries(ABILITIES.map(k=>[k,90+state.points[k]])),jockey:{id:'custom-'+Date.now(),name:jockeyName,era:'オリジナル',type:jt,bonus:{...CUSTOM_JOCKEY_TYPES[jt]}}}}
+function beginCreate(mode){state.mode=mode;state.points={speed:0,stamina:0,kick:0,start:0,mud:0};$('createTitle').textContent=mode==='host'?'主催する馬を作る':'参加する馬を作る';renderAbility();show('horseCreate')}
+function onCreateNext(){const p=createPlayer();if(!p)return;state.player=p;if(state.mode==='host')show('hostSetup');else show('joinSetup')}
+function chosenRace(prefix){const idx=+$(`${prefix}Race`).value;return{venue:$(`${prefix}Venue`).value,race:RACES[idx],going:$(`${prefix}Going`).value,fieldSize:+$(`${prefix}FieldSize`).value}}
+function setRunnerJockey(h,j){h.jockey={...j,bonus:{...j.bonus}};ABILITIES.forEach(k=>h[k]=Math.max(70,Math.min(105,(h['base'+k[0].toUpperCase()+k.slice(1)]??h[k])+Number(j.bonus[k]||0))));h.rating=Math.round(ABILITIES.reduce((a,k)=>a+h[k],0)/ABILITIES.length);return h}
+function legendToRunner(h,i,j){const r={number:i+1,name:h.name,owner:'名馬',style:h.style,baseSpeed:h.speed,baseStamina:h.stamina,baseKick:h.kick,baseStart:h.start,baseMud:h.mud,best:h.best,isPlayer:false};return setRunnerJockey(r,j)}
+function playerToRunner(p,i){const a=p.abilities,r={number:i+1,name:p.horse,owner:p.name,style:p.style,baseSpeed:a.speed,baseStamina:a.stamina,baseKick:a.kick,baseStart:a.start,baseMud:a.mud,best:[1200,3200],isPlayer:true,playerId:p.id};return setRunnerJockey(r,p.jockey||{id:'custom',name:'オリジナル騎手',era:'オリジナル',type:'バランス型',bonus:CUSTOM_JOCKEY_TYPES['バランス型']})}
+function shuffled(arr,rnd){return arr.map(v=>[rnd(),v]).sort((a,b)=>a[0]-b[0]).map(x=>x[1])}
+function makeField(players=[]){const rnd=seeded(state.seed);const selected=[];players.forEach(p=>selected.push(playerToRunner(p,selected.length)));const pool=shuffled(LEGENDS,rnd),jp=shuffled(JOCKEYS,rnd);while(selected.length<state.fieldSize){const h=pool.shift();if(!selected.some(x=>x.name===h.name))selected.push(legendToRunner(h,selected.length,jp[selected.length%jp.length]))}selected.forEach((h,i)=>h.number=i+1);state.field=selected;calculateProbabilities()}
+function baseScore(h){const D=state.race.distance,mid=(h.best[0]+h.best[1])/2,range=Math.max(500,(h.best[1]-h.best[0])/2),distFit=Math.max(-8,6-Math.abs(D-mid)/range*7);const longW=Math.max(0,Math.min(1,(D-1200)/2000));const shortW=1-longW;let score=h.speed*.29+h.stamina*(.19+.22*longW)+h.kick*.25+h.start*(.16*shortW+.05)+h.rating*.08+distFit;const goingWeight={良:0,稍重:.05,重:.10,不良:.16}[state.going];score+=h.mud*goingWeight;score+=({逃げ:state.venue==='東京'?-1:1,先行:1,差し:state.venue==='東京'?2:0,追込:state.venue==='東京'?2:-1}[h.style]||0);return score}
+function calculateProbabilities(){const scores=state.field.map(baseScore),max=Math.max(...scores),weights=scores.map(s=>Math.exp((s-max)/5.2)),sum=weights.reduce((a,b)=>a+b,0);state.field.forEach((h,i)=>{h.power=scores[i];h.winProb=weights[i]/sum;h.placeProb=Math.min(.88,h.winProb*2.2+.08);h.winOdds=Math.max(1.2,Math.min(99.9,.82/h.winProb));h.placeOdds=Math.max(1.1,Math.min(20,.78/h.placeProb))})}
+function conditionText(){return `${state.venue} 芝${state.race.distance}m・${state.going}・${VENUES[state.venue].turn}回り`}
+function bonusText(j){return ABILITIES.map(k=>{const v=Number(j.bonus?.[k]||0);return v?`${ABILITY_LABEL[k]}${v>0?'+':''}${v}`:''}).filter(Boolean).join(' / ')||'能力補正なし'}
+function renderJockeyPicker(){const panel=$('jockeyPanel'),h=state.field.find(x=>x.number===state.selection);if(!h){panel.hidden=true;return}panel.hidden=false;if(state.mode!=='solo'){panel.innerHTML=`<h3>騎手</h3><div class="jockey-current"><b>${escapeHtml(h.jockey?.name||'未設定')}</b><small>${escapeHtml(h.jockey?.type||'')}・${escapeHtml(bonusText(h.jockey||{bonus:{}}))}</small></div><p class="hint">オンラインでは各プレイヤーが作成した騎手が自分の馬に騎乗します。</p>`;return}panel.innerHTML=`<h3>騎手を選ぶ</h3><label><select id="jockeySelect">${JOCKEYS.map(j=>`<option value="${j.id}" ${h.jockey?.id===j.id?'selected':''}>${escapeHtml(j.name)}（${j.era}・${j.type}）</option>`).join('')}</select></label><div class="jockey-current"><b>${escapeHtml(h.jockey.name)}</b><small>${escapeHtml(bonusText(h.jockey))}</small></div><p class="hint">騎手能力はゲーム用の架空設定です。変更すると勝率とオッズを再計算します。</p>`;const sel=$('jockeySelect');sel.onchange=()=>{const j=JOCKEYS.find(x=>x.id===sel.value);if(j){setRunnerJockey(h,j);state.selectedJockeyId=j.id;calculateProbabilities();renderBet()}}}
+function renderBet(){calculateProbabilities();$('raceLabel').textContent=`第${state.raceNo}競走`;$('raceTitle').textContent=state.race.name;$('raceConditions').textContent=conditionText();const top=[...state.field].sort((a,b)=>b.winProb-a.winProb)[0];$('bestChance').innerHTML=`能力予測1位<br><b>${top.number}番 ${escapeHtml(top.name)}</b><br>${(top.winProb*100).toFixed(1)}%`;$('winTab').classList.toggle('active',state.betType==='win');$('placeTab').classList.toggle('active',state.betType==='place');$('oddsList').innerHTML=state.field.map(h=>`<button class="horse-row ${state.selection===h.number?'selected':''}" data-n="${h.number}"><span class="horse-num" style="background:${COLORS[(h.number-1)%COLORS.length]};color:${h.number===2?'white':'#111'}">${h.number}</span><span class="horse-info"><b>${escapeHtml(h.name)}</b><small>${escapeHtml(h.owner)}・${h.style}・騎手 ${escapeHtml(h.jockey?.name||'未設定')}・能力${h.rating}</small></span><span class="horse-odds"><b>${(state.betType==='win'?h.winOdds:h.placeOdds).toFixed(1)}倍</b><small>${state.betType==='win'?'勝率':'複勝率'} ${(100*(state.betType==='win'?h.winProb:h.placeProb)).toFixed(1)}%</small></span></button>`).join('');document.querySelectorAll('.horse-row').forEach(b=>b.onclick=()=>{state.selection=+b.dataset.n;renderBet();updateTicket()});renderJockeyPicker();updateTicket();show('bet')}
+function updateTicket(){const h=state.field.find(x=>x.number===state.selection);state.stake=Math.max(0,+$('stake').value||0);if(!h){$('ticketName').textContent='馬を選択';$('ticketOdds').textContent='--';$('ticketPayout').textContent='--';$('raceStartBtn').disabled=true;return}const odds=state.betType==='win'?h.winOdds:h.placeOdds;$('ticketName').textContent=`${state.betType==='win'?'単勝':'複勝'} ${h.number}番 ${h.name}`;$('ticketOdds').textContent=`${odds.toFixed(1)}倍`;$('ticketPayout').textContent=`${Math.floor(state.stake*odds).toLocaleString('ja-JP')}pt`;$('raceStartBtn').disabled=state.stake<100||state.stake>state.wallet}
+function setBet(type){state.betType=type;state.selection=null;renderBet()}
+function startFromBet(){updateTicket();if($('raceStartBtn').disabled)return;state.wallet-=state.stake;saveWallet();if(state.mode==='join'){sendHost({type:'ready',playerId:state.player.id,selection:state.selection,betType:state.betType,stake:state.stake});show('waiting')}else if(state.mode==='host'){state.members.get(state.player.id).ready={selection:state.selection,betType:state.betType,stake:state.stake};broadcastMembers();const waiting=[...state.members.values()].filter(m=>!m.ready);if(waiting.length){alert(`まだ${waiting.length}人が馬券を確定していません。全員の準備完了後にもう一度押してな。`);state.wallet+=state.stake;saveWallet();state.members.get(state.player.id).ready=null;broadcastMembers();return}prepareOnlineRace()}else startCountdown({seed:state.seed,field:state.field,startAt:Date.now()+3300})}
+function createRoom(){const code=normalizeCode($('hostCode').value);if(code.length<4){$('hostError').textContent='ルーム名は4文字以上で入力してな。';return}$('hostError').textContent='';Object.assign(state,chosenRace('host'));state.roomCode=code;state.isHost=true;state.mode='host';state.members=new Map([[state.player.id,{...state.player,ready:null,host:true}]]);openHostPeer()}
+function peerId(code){return `kawakami-umauma-v15-${code.toLowerCase()}`}
+function openHostPeer(){cleanupPeer();$('lobbyStatus').textContent='ルームを作成しています…';show('lobby');renderLobby();try{state.peer=new Peer(peerId(state.roomCode),{debug:0});state.peer.on('open',()=>{$('lobbyStatus').textContent='ルーム作成完了。友達の参加を待っています。';$('startOnlineBtn').hidden=false;renderQr();renderLobby()});state.peer.on('connection',conn=>{conn.on('open',()=>{state.connections.set(conn.peer,conn);conn.on('data',data=>hostReceive(conn,data));conn.on('close',()=>removeByConn(conn));conn.on('error',()=>removeByConn(conn));conn.send({type:'hello',room:state.roomCode,config:raceConfig(),members:[...state.members.values()]})})});state.peer.on('error',e=>{$('lobbyStatus').textContent=e.type==='unavailable-id'?'同じルーム名がすでに使われています。別の名前にしてな。':'ルーム作成に失敗しました。通信環境を確認してな。'})}catch(e){$('lobbyStatus').textContent='オンライン機能を読み込めませんでした。再読み込みしてな。'}}
+function joinRoom(){const code=normalizeCode($('joinCode').value);if(code.length<4){$('joinError').textContent='ルーム名を4文字以上で入力してな。';return}$('joinError').textContent='';state.roomCode=code;state.isHost=false;state.mode='join';show('lobby');$('lobbyStatus').textContent='主催者に接続しています…';renderLobby();cleanupPeer();try{state.peer=new Peer(undefined,{debug:0});state.peer.on('open',()=>{const conn=state.peer.connect(peerId(code),{reliable:true});state.hostConn=conn;const timer=setTimeout(()=>{$('lobbyStatus').textContent='ルームが見つかりません。名前を確認するか、主催者に画面を開いてもらってな。'},9000);conn.on('open',()=>{clearTimeout(timer);$('lobbyStatus').textContent='接続しました。';conn.on('data',joinReceive);conn.on('close',()=>{$('lobbyStatus').textContent='主催者との接続が切れました。'});conn.send({type:'join',player:state.player})});conn.on('error',()=>{$('lobbyStatus').textContent='参加できませんでした。ルーム名を確認してな。'})});state.peer.on('error',()=>{$('lobbyStatus').textContent='通信接続に失敗しました。'})}catch(e){$('lobbyStatus').textContent='オンライン機能を読み込めませんでした。'}}
+function hostReceive(conn,data){if(!data||!data.type)return;if(data.type==='join'){const p=data.player;if(!p||!p.id)return;state.members.set(p.id,{...p,ready:null,connPeer:conn.peer});conn.playerId=p.id;broadcastMembers();renderLobby()}if(data.type==='ready'){const m=state.members.get(data.playerId);if(m){m.ready={selection:data.selection,betType:data.betType,stake:data.stake};broadcastMembers();renderLobby()}}if(data.type==='whip'){broadcast(data);applyWhipEvent(data)}}
+function joinReceive(data){if(!data||!data.type)return;if(data.type==='hello'){Object.assign(state,data.config);state.members=new Map(data.members.map(m=>[m.id,m]));state.hostConn.send({type:'join',player:state.player});renderLobby()}if(data.type==='members'){state.members=new Map(data.members.map(m=>[m.id,m]));renderLobby()}if(data.type==='goBet'){Object.assign(state,data.config);state.seed=data.seed;state.field=data.field;state.selection=null;state.betType='win';renderBet()}if(data.type==='startRace'){state.racePayload=data.payload;startCountdown(data.payload)}if(data.type==='whip')applyWhipEvent(data);if(data.type==='roomClosed'){$('lobbyStatus').textContent='主催者がルームを終了しました。'}}
+function raceConfig(){return{venue:state.venue,race:state.race,going:state.going,fieldSize:state.fieldSize,raceNo:state.raceNo}}
+function broadcast(data){state.connections.forEach(c=>{if(c.open)c.send(data)})}
+function sendHost(data){if(state.hostConn&&state.hostConn.open)state.hostConn.send(data)}
+function broadcastMembers(){broadcast({type:'members',members:[...state.members.values()]})}
+function removeByConn(conn){if(conn.playerId)state.members.delete(conn.playerId);state.connections.delete(conn.peer);broadcastMembers();renderLobby()}
+function renderLobby(){if(!state.roomCode)return;$('roomCodeText').textContent=state.roomCode;$('lobbyRaceTitle').textContent=state.race?state.race.name:'レース情報を待っています';$('lobbyConditions').textContent=state.race?conditionText():'';$('lobbyMembers').innerHTML=[...state.members.values()].map((m,i)=>`<div class="member"><span class="badge">${i+1}</span><div><b>${escapeHtml(m.horse)}</b><small>${escapeHtml(m.name)}・${m.style}・騎手 ${escapeHtml(m.jockey?.name||'未設定')}${m.host?'・主催者':''}</small></div><span>${m.ready?'✅':'待機中'}</span></div>`).join('')||'<p class="hint">参加者情報を待っています。</p>';$('startOnlineBtn').hidden=!state.isHost}
+function renderQr(){const url=`${location.origin}${location.pathname}?join=${encodeURIComponent(state.roomCode)}`;$('qr').innerHTML='';if(window.QRCode)new QRCode($('qr'),{text:url,width:134,height:134,correctLevel:QRCode.CorrectLevel.M})}
+function hostGoBet(){state.seed=Date.now();const players=[...state.members.values()];makeField(players);const data={type:'goBet',config:raceConfig(),seed:state.seed,field:state.field};broadcast(data);state.selection=null;state.betType='win';renderBet()}
+function prepareOnlineRace(){const payload={seed:state.seed,field:state.field,startAt:Date.now()+4000,config:raceConfig()};broadcast({type:'startRace',payload});startCountdown(payload)}
+function leaveRoom(){if(state.isHost)broadcast({type:'roomClosed'});cleanupPeer();state.members.clear();state.roomCode='';state.isHost=false;show('home')}
+function cleanupPeer(){try{if(state.hostConn)state.hostConn.close();state.connections.forEach(c=>c.close());if(state.peer)state.peer.destroy()}catch(e){}state.peer=null;state.hostConn=null;state.connections=new Map()}
+function startCountdown(payload){state.racePayload=payload;state.seed=payload.seed;state.field=payload.field;Object.assign(state,payload.config||{});show('countdown');const tick=()=>{const left=Math.ceil((payload.startAt-Date.now())/1000);$('countNum').textContent=left>0?left:'START';if(left<=0){setTimeout(()=>{show('race');runRace(payload)},250)}else setTimeout(tick,80)};tick()}
+function officialPlan(field,seed){const rnd=seeded(seed^0x9e3779b9);const rows=field.map(h=>({h,score:baseScore(h)+(rnd()-.5)*18})).sort((a,b)=>b.score-a.score);return rows.map((x,rank)=>({...x.h,finalRank:rank,finishWall:28.35+rank*.115+rnd()*.055}))}
+function controlledRunner(runners){if(state.mode==='solo')return runners.find(r=>r.number===state.selection);return runners.find(r=>r.playerId===state.player?.id)}
+function applyWhipEvent(data){if(!data?.tapId||state.whipSeen.has(data.tapId))return;state.whipSeen.add(data.tapId);const rt=state.raceRuntime;if(!rt)return;const r=rt.runners.find(x=>data.playerId?x.playerId===data.playerId:x.number===data.number);if(!r||r.finish||r.display<.76)return;r.whipTaps=(r.whipTaps||0)+1;const benefit=r.whipTaps<=8?.055:r.whipTaps<=12?.028:.008;r.finishWall=Math.max(rt.wall+.35,r.finishWall-benefit);r.whipFlash=performance.now()+180;$('whipCount').textContent=`${r.whipTaps}回`}
+function tapWhip(){if(state.mode!=='host'&&state.mode!=='join')return;const rt=state.raceRuntime;if(!rt)return;const r=controlledRunner(rt.runners);if(!r||r.finish||r.display<.76)return;const data={type:'whip',tapId:`${state.player?.id||'solo'}-${Date.now()}-${Math.random()}`,playerId:r.playerId||null,number:r.number};applyWhipEvent(data);if(state.mode==='join')sendHost(data);else if(state.mode==='host')broadcast(data)}
+function runRace(payload){const canvas=$('track'),ctx=canvas.getContext('2d');resizeCanvas(canvas);const plan=officialPlan(payload.field,payload.seed),rnd=seeded(payload.seed),runners=plan.map((h,i)=>({...h,p:0,display:0,finish:false,lane:i,ph1:rnd()*7,ph2:rnd()*7,a1:.028+rnd()*.032,a2:.012+rnd()*.019,whipTaps:0,actualFinish:null}));state.whipSeen=new Set();state.raceRuntime={runners,wall:0};const dots=makeProgress(runners);$('liveTitle').textContent=state.race.name;$('liveCond').textContent=conditionText();$('whipPanel').hidden=true;$('whipCount').textContent='0回';let t0=null,last=null,lastCall=-1,done=false;
+ function frame(ts){if(t0===null){t0=ts;last=ts}const wall=(ts-t0)/1000,dt=Math.min(.05,(ts-last)/1000);last=ts;state.raceRuntime.wall=wall;runners.forEach(h=>{if(h.finish){h.display=1;return}const t=Math.max(0,Math.min(1,wall/h.finishWall)),env=Math.sin(Math.PI*t),waves=(Math.sin(t*35+h.ph1)*h.a1+Math.sin(t*71+h.ph2)*h.a2)*env;let style=0;if(h.style==='逃げ')style=.045*(1-t)*env;if(h.style==='先行')style=.024*(1-t)*env;if(h.style==='差し')style=.045*smooth((t-.32)/.55)*env;if(h.style==='追込')style=.065*smooth((t-.48)/.40)*env;const settle=smooth((t-.78)/.22),rankPush=((runners.length-1-h.finalRank)-(runners.length-1)/2)*.006*settle;let target=Math.min(.998,t+waves+style+rankPush);const follow=(target-h.display)*(1-Math.exp(-8*dt)),minimum=dt/(h.finishWall*1.06);h.display=Math.min(.998,Math.max(h.display+minimum,h.display+follow));if(wall>=h.finishWall){h.finish=true;h.display=1;h.actualFinish=wall}});drawTrack(ctx,runners);updateProgress(dots,runners);const order=[...runners].sort((a,b)=>b.display-a.display),lead=order[0],control=controlledRunner(runners);$('clock').textContent=`0:${Math.min(32,wall).toFixed(1).padStart(4,'0')}`;$('remaining').textContent=`${Math.max(0,Math.round(state.race.distance*(1-lead.display)))}m`;$('leaderText').textContent=`先頭：${lead.number}番 ${lead.name}`;const whipReady=(state.mode==='host'||state.mode==='join')&&control&&!control.finish&&control.display>=.76;$('whipPanel').hidden=!whipReady;if(whipReady)$('whipHorse').textContent=`${control.number}番 ${control.name}を追う！`;const c=Math.floor(wall/4);if(c!==lastCall){lastCall=c;const line=commentary(c,order);$('commentary').textContent=line;speakCommentary(line)}if(runners.every(h=>h.finish)||wall>32){if(!done){done=true;$('whipPanel').hidden=true;const sorted=[...runners].sort((a,b)=>(a.actualFinish??99)-(b.actualFinish??99));const base=estimateSeconds(state.race.distance),first=sorted[0].actualFinish||28;state.result=sorted.map((h,i)=>({...h,officialTime:base+((h.actualFinish||first)-first)*.42+i*.01}));state.raceRuntime=null;setTimeout(showResult,700)}return}requestAnimationFrame(frame)}requestAnimationFrame(frame)}
+function smooth(x){x=Math.max(0,Math.min(1,x));return x*x*(3-2*x)}
+function resizeCanvas(canvas){const dpr=Math.min(2,devicePixelRatio||1),rect=canvas.getBoundingClientRect();canvas.width=Math.max(800,Math.round(rect.width*dpr));canvas.height=Math.max(520,Math.round(rect.height*dpr))}
+function drawTrack(ctx,runners){const w=ctx.canvas.width,h=ctx.canvas.height;ctx.clearRect(0,0,w,h);const sky=ctx.createLinearGradient(0,0,0,h*.45);sky.addColorStop(0,'#82c9ff');sky.addColorStop(1,'#e8f5ff');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h*.35);ctx.fillStyle='#1f7c42';ctx.fillRect(0,h*.35,w,h*.65);ctx.fillStyle='#c69a61';ctx.fillRect(0,h*.48,w,h*.47);for(let i=0;i<=runners.length;i++){const y=h*.48+i*(h*.47/runners.length);ctx.strokeStyle='#ffffff88';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}const start=w*.07,goal=w*.93;ctx.fillStyle='#ffe34f';ctx.fillRect(start-5,h*.42,10,h*.55);for(let y=h*.42;y<h*.97;y+=20){ctx.fillStyle=((y/20)|0)%2?'#fff':'#111';ctx.fillRect(goal-7,y,14,20)}runners.forEach((r,i)=>{const laneY=h*.48+(i+.5)*(h*.47/runners.length),x=start+(goal-start)*r.display;drawHorse(ctx,x,laneY,r,i)});ctx.fillStyle='#103d22';ctx.fillRect(0,h*.95,w,h*.05);ctx.fillStyle='#fff';ctx.font=`700 ${Math.max(16,w*.018)}px sans-serif`;ctx.fillText('START',start-30,h*.44);ctx.fillText('GOAL',goal-28,h*.44)}
+function drawHorse(ctx,x,y,r,i){const scale=Math.max(.75,Math.min(1.25,ctx.canvas.width/1050));ctx.save();ctx.translate(x,y);ctx.fillStyle='#4b2c18';ctx.beginPath();ctx.ellipse(0,0,25*scale,12*scale,0,0,Math.PI*2);ctx.fill();ctx.fillRect(13*scale,-9*scale,17*scale,8*scale);ctx.beginPath();ctx.arc(29*scale,-9*scale,7*scale,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#2f1b10';ctx.lineWidth=4*scale;const phase=performance.now()/80+i;for(const dx of [-13,10]){ctx.beginPath();ctx.moveTo(dx*scale,8*scale);ctx.lineTo((dx+Math.sin(phase)*8)*scale,24*scale);ctx.stroke()}ctx.fillStyle=COLORS[(r.number-1)%COLORS.length];ctx.beginPath();ctx.arc(-1*scale,-15*scale,10*scale,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle=r.number===2?'#fff':'#111';ctx.font=`900 ${12*scale}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(r.number,-1*scale,-15*scale);if(r.whipFlash&&performance.now()<r.whipFlash){ctx.strokeStyle='#ffe45b';ctx.lineWidth=4*scale;ctx.beginPath();ctx.moveTo(-8*scale,-25*scale);ctx.lineTo(12*scale,-38*scale);ctx.stroke()}ctx.restore()}
+function makeProgress(runners){const box=$('progressTrack');box.innerHTML='';const map=new Map();runners.forEach((r,i)=>{const d=document.createElement('div');d.className='progress-dot';d.textContent=r.number;d.style.background=COLORS[(r.number-1)%COLORS.length];d.style.color=r.number===2?'white':'#111';d.style.top=`${12+(i/(runners.length-1||1))*76}%`;box.appendChild(d);map.set(r.number,d)});updateProgress(map,runners);return map}
+function updateProgress(map,runners){runners.forEach(r=>{const el=map.get(r.number);if(el)el.style.left=`${7+r.display*86}%`})}
+function commentary(c,o){const a=o[0],b=o[1]||o[0],four=o.slice(0,4).map(x=>`${x.number}番${x.name}`).join('、');const aj=a.jockey?.name||'騎手',bj=b.jockey?.name||'騎手';return [`スタート！ ${a.number}番${a.name}、${aj}騎手とともに好発！`,`先行争いは大混戦！ ${b.number}番${b.name}が外から並ぶ！`,`各馬止まらず前進！ ${a.name}と${b.name}、順位が目まぐるしく変わる！`,`中盤、${a.number}番${a.name}が先頭！ ${aj}騎手が落ち着いて運ぶ！`,`残り半分！ ${four}が一団！`,`直線に入った！ ${b.name}、${bj}騎手の追い出し！ 全馬が伸びる！`,`ゴール前は横一線！ ${a.name}と${b.name}が激しく競り合う！`,`ゴール！ ${a.number}番${a.name}か！ 写真判定級の大接戦！`][Math.min(7,c)]}
+function speakCommentary(text){if(state.mode!=='party'||!state.partyVoice||!('speechSynthesis' in window))return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='ja-JP';u.rate=1.12;u.pitch=1.02;u.volume=1;window.speechSynthesis.speak(u)}
+function estimateSeconds(d){return({1200:68,1600:94,1800:108,2000:120,2200:132,2400:145,2500:151,3000:185,3200:198}[d]||d/16.5)}
+function showResult(){show('result');const result=state.result;$('nextBtn').textContent=state.mode==='party'?'パーティーモードをもう一度':'次のレースへ';$('resultList').innerHTML=result.map((h,i)=>`<div class="result-row"><span class="place">${i+1}着</span><span class="horse-num" style="background:${COLORS[(h.number-1)%COLORS.length]};color:${h.number===2?'white':'#111'}">${h.number}</span><span><b>${escapeHtml(h.name)}</b><small>${escapeHtml(h.owner)}・${h.style}・騎手 ${escapeHtml(h.jockey?.name||'未設定')}</small></span><span class="time">${formatTime(h.officialTime)}${i?` +${(h.officialTime-result[0].officialTime).toFixed(2)}`:''}</span></div>`).join('');if(state.mode==='party'){$('payoutBox').classList.add('win');$('payoutBox').innerHTML=`<b>🏆 優勝 ${result[0].number}番 ${escapeHtml(result[0].name)}</b><br>騎手 ${escapeHtml(result[0].jockey?.name||'未設定')}<br><small>勝率予測 ${(result[0].winProb*100).toFixed(1)}%・単勝想定 ${result[0].winOdds.toFixed(1)}倍</small>`;return}const selected=result.find(h=>h.number===state.selection),rank=result.findIndex(h=>h.number===state.selection)+1,hit=state.betType==='win'?rank===1:rank>0&&rank<=3,odds=selected?(state.betType==='win'?selected.winOdds:selected.placeOdds):0,pay=hit?Math.floor(state.stake*odds):0;if(pay){state.wallet+=pay;saveWallet()}$('payoutBox').classList.toggle('win',hit);$('payoutBox').innerHTML=selected?`<b>${state.betType==='win'?'単勝':'複勝'} ${selected.number}番 ${escapeHtml(selected.name)}</b><br>${hit?`🎉 的中！ 払戻 ${pay.toLocaleString('ja-JP')}pt`:'不的中'}<br><small>現在の所持ポイント ${state.wallet.toLocaleString('ja-JP')}pt</small>`:'馬券なし'}
+function formatTime(sec){const m=Math.floor(sec/60),s=sec-m*60;return `${m}:${s.toFixed(1).padStart(4,'0')}`}
+function nextRace(){if(state.mode==='party'){startPartySetup();return}state.raceNo++;state.selection=null;state.result=[];state.seed=Date.now();if(state.mode==='solo'){const cfg=chosenRace('solo');Object.assign(state,cfg);makeField();renderBet()}else if(state.isHost){state.members.forEach(m=>m.ready=null);broadcastMembers();show('lobby')}else show('lobby')}
+function replay(){const payload={seed:state.seed,field:state.field,startAt:Date.now()+1500,config:raceConfig()};state.selection=state.selection;startCountdown(payload)}
+function shareRoom(){const url=`${location.origin}${location.pathname}?join=${encodeURIComponent(state.roomCode)}`;if(navigator.share)navigator.share({title:'川上ウマウマレース',text:`ルーム「${state.roomCode}」に参加してな！`,url}).catch(()=>{});else navigator.clipboard?.writeText(url)}
+function soloMake(){Object.assign(state,chosenRace('solo'));state.mode='solo';state.seed=Date.now();state.selection=null;makeField();renderBet()}
+
+function startPartySetup(){state.mode='party';state.partyEntries=[];state.partyIndex=0;state.selection=null;state.result=[];show('partySetup')}
+function beginPartyEntries(){const idx=+$('partyRace').value;state.mode='party';state.partyEntries=[];state.partyIndex=0;state.partyVoice=$('partyVoice').checked;state.venue=$('partyVenue').value;state.race=RACES[idx];state.going=$('partyGoing').value;state.fieldSize=+$('partyFieldSize').value;state.seed=Date.now();showPartyHandoff()}
+function showPartyHandoff(){$('partyTurnNumber').textContent=state.partyIndex+1;show('partyHandoff')}
+function openPartyEntry(){$('partyEntryNumber').textContent=state.partyIndex+1;$('partyHorseName').value='';$('partyJockeyName').value='';$('partyStyle').value='先行';$('partyEntryError').textContent='';show('partyEntry')}
+function savePartyEntry(){const horse=$('partyHorseName').value.trim(),jockey=$('partyJockeyName').value.trim();if(!horse||!jockey){$('partyEntryError').textContent='馬の名前と騎手の名前を両方入力してな。';return}if(state.partyEntries.some(x=>x.horse===horse)){$('partyEntryError').textContent='同じ馬名がすでに使われています。別の名前にしてな。';return}state.partyEntries.push({number:state.partyIndex+1,horse,jockey,style:$('partyStyle').value});$('partyHorseName').value='';$('partyJockeyName').value='';state.partyIndex++;if(state.partyIndex<state.fieldSize)showPartyHandoff();else{$('partyReadyCount').textContent=state.fieldSize;show('partyReady')}}
+function partyRunner(e){const base={speed:90,stamina:90,kick:90,start:90,mud:90};return setRunnerJockey({number:e.number,name:e.horse,owner:`${e.number}番プレイヤー`,style:e.style,baseSpeed:base.speed,baseStamina:base.stamina,baseKick:base.kick,baseStart:base.start,baseMud:base.mud,best:[1000,3600],isPlayer:true,playerId:`party-${e.number}`},{id:`party-j-${e.number}`,name:e.jockey,era:'オリジナル',type:'パーティー',bonus:{speed:0,stamina:0,kick:0,start:0,mud:0}})}
+function revealPartyRace(){state.field=state.partyEntries.map(partyRunner);calculateProbabilities();$('partyRevealList').innerHTML=state.field.map((h,i)=>`<div class="reveal-card" style="animation-delay:${i*.12}s"><span class="horse-num" style="background:${COLORS[(h.number-1)%COLORS.length]};color:${h.number===2?'white':'#111'}">${h.number}</span><div><b>${escapeHtml(h.name)}</b><small>騎手 ${escapeHtml(h.jockey.name)}・${h.style}</small></div><strong>${(h.winProb*100).toFixed(1)}%</strong></div>`).join('');show('partyReveal');let n=5;$('partyRevealCountdown').textContent=`${n}秒後にゲートイン`;const timer=setInterval(()=>{n--;$('partyRevealCountdown').textContent=n>0?`${n}秒後にゲートイン`:'ゲートイン！';if(n<=0){clearInterval(timer);startCountdown({seed:state.seed,field:state.field,startAt:Date.now()+3200,config:raceConfig()})}},1000)}
+function parseJoin(){const p=new URLSearchParams(location.search),code=normalizeCode(p.get('join'));if(code){state.mode='join';$('joinCode').value=code;beginCreate('join')}}
+$('backBtn').onclick=goBack;$('partyBtn').onclick=startPartySetup;$('partySetupBtn').onclick=beginPartyEntries;$('partyOpenEntryBtn').onclick=openPartyEntry;$('partyEntryDoneBtn').onclick=savePartyEntry;$('partyRevealBtn').onclick=revealPartyRace;$('soloBtn').onclick=()=>show('soloSetup');$('hostBtn').onclick=()=>beginCreate('host');$('joinBtn').onclick=()=>beginCreate('join');$('createNextBtn').onclick=onCreateNext;$('createRoomBtn').onclick=createRoom;$('joinRoomBtn').onclick=joinRoom;$('makeSoloBtn').onclick=soloMake;$('winTab').onclick=()=>setBet('win');$('placeTab').onclick=()=>setBet('place');$('stake').oninput=updateTicket;$('raceStartBtn').onclick=startFromBet;$('startOnlineBtn').onclick=hostGoBet;$('copyCodeBtn').onclick=()=>navigator.clipboard?.writeText(state.roomCode);$('shareBtn').onclick=shareRoom;$('leaveRoomBtn').onclick=leaveRoom;$('nextBtn').onclick=nextRace;$('replayBtn').onclick=replay;$('whipBtn').onclick=tapWhip;$('resetWalletBtn').onclick=()=>{state.wallet=10000;saveWallet()};window.addEventListener('beforeunload',()=>{if(state.isHost)broadcast({type:'roomClosed'});cleanupPeer()});window.addEventListener('resize',()=>{if(state.screen==='race')resizeCanvas($('track'))});
+setupSelects();renderAbility();saveWallet();show('home',false);parseJoin();
