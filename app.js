@@ -206,7 +206,7 @@ function drawRaceScene(ctx,runners,{gateOpen=0,showGate=false}={}){
  for(let y=h*.42;y<h*.97;y+=20){ctx.fillStyle=((y/20)|0)%2?'#fff':'#111';ctx.fillRect(goal-7,y,14,20)}
  const horseScale=Math.max(.75,Math.min(1.25,w/1050));
  const gateHorseX=start-(38*horseScale); // 鼻先までスタートラインの手前に収める
- runners.forEach((r,i)=>{const laneY=h*.48+(i+.5)*(h*.47/runners.length);const x=gateHorseX+trackW*Math.max(0,r.display||0);drawHorse(ctx,x,laneY,r,i)});
+ runners.forEach((r,i)=>{const lane=Number.isFinite(r.lane)?r.lane:i;const laneY=h*.48+(lane+.5)*(h*.47/runners.length);const x=gateHorseX+trackW*Math.max(0,r.display||0);drawHorse(ctx,x,laneY,r,lane)});
  if(showGate){
    const stallW=Math.max(28,w*.048),gateX=gateHorseX-stallW*.28,gateTop=h*.46,gateBottom=h*.95;
    ctx.fillStyle='#c7d0ca';ctx.fillRect(gateX-stallW*.55,gateTop,stallW*1.18,gateBottom-gateTop);ctx.strokeStyle='#eef4f0';ctx.lineWidth=3;ctx.strokeRect(gateX-stallW*.55,gateTop,stallW*1.18,gateBottom-gateTop);
@@ -232,11 +232,27 @@ async function startCountdown(payload){
 }
 function officialPlan(field,seed){
  const rnd=seeded(seed^0x9e3779b9);
- const rows=field.map(h=>({h,score:baseScore(h)+(rnd()-.5)*16})).sort((a,b)=>b.score-a.score);
- const winnerTime=44.9+rnd()*.18;
- // 1着が肉眼で分かる僅差。2着以下も完全な横並びにはしない。
- const gaps=[0,.34,.66,.98,1.28,1.56,1.82,2.06,2.28,2.49,2.69,2.88,3.06,3.23,3.39,3.54,3.68,3.81];
- return rows.map((x,rank)=>({...x.h,finalRank:rank,finishWall:winnerTime+(gaps[rank]??(2.6+rank*.16))}))
+ // 能力は勝ちやすさへ反映するが、着順を固定しない。
+ // レースごとの展開・位置取り・当日の揺らぎを別々に加え、全枠に全着順の可能性を持たせる。
+ const rows=field.map((h,gateIndex)=>{
+  const ability=baseScore(h);
+  const condition=(rnd()+rnd()+rnd()-1.5)*18;
+  const tactics=(rnd()-.5)*24;
+  const breakLuck=(rnd()-.5)*14;
+  const tieBreaker=rnd()*1e-4;
+  return {h,gateIndex,score:ability*.72+condition+tactics+breakLuck+tieBreaker}
+ }).sort((a,b)=>b.score-a.score);
+ const winnerTime=44.75+rnd()*.45;
+ // 毎回差も変える。1〜3着は見分けられる僅差、後続も同じ間隔にはしない。
+ let gap=0;
+ return rows.map((x,rank)=>{
+  if(rank>0){
+   const min=rank===1?.24:rank===2?.20:.14;
+   const spread=rank<3?.34:.30;
+   gap+=min+rnd()*spread;
+  }
+  return {...x.h,gateIndex:x.gateIndex,finalRank:rank,finishWall:winnerTime+gap}
+ })
 }
 function styleBand(style,phase){
  // 前半は脚質を強く維持し、中盤から差し・追込が進出する。
@@ -331,7 +347,8 @@ function tapWhip(){if(state.mode!=='host'&&state.mode!=='join')return;const rt=s
 function runRace(payload,token=state.navToken){
  const canvas=$('track'),ctx=canvas.getContext('2d');resizeCanvas(canvas);
  const plan=officialPlan(payload.field,payload.seed),rnd=seeded(payload.seed^0x51f15e);
- const runners=plan.map((h,i)=>({...h,display:0,finish:false,lane:i,whipTaps:0,actualFinish:null,lastDisplay:0,visualSpeed:1/45}));
+ const laneByNumber=new Map(payload.field.map((h,i)=>[h.number,i]));
+ const runners=plan.map((h,i)=>({...h,display:0,finish:false,lane:laneByNumber.get(h.number)??h.gateIndex??i,whipTaps:0,actualFinish:null,lastDisplay:0,visualSpeed:1/45}));
  buildRaceTimeline(runners,payload.seed,state.race.distance);
  state.whipSeen=new Set();state.raceRuntime={runners,wall:0};
  const dots=makeProgress(runners);$('liveTitle').textContent=state.race.name;$('liveCond').textContent=conditionText();
@@ -410,9 +427,9 @@ function raceDramaOffset(r,t){
  return phase1+surge1+surge2-fade
 }
 function resizeCanvas(canvas){const dpr=Math.min(2,devicePixelRatio||1),rect=canvas.getBoundingClientRect();canvas.width=Math.max(800,Math.round(rect.width*dpr));canvas.height=Math.max(520,Math.round(rect.height*dpr))}
-function drawTrack(ctx,runners){const w=ctx.canvas.width,h=ctx.canvas.height;ctx.clearRect(0,0,w,h);const sky=ctx.createLinearGradient(0,0,0,h*.45);sky.addColorStop(0,'#82c9ff');sky.addColorStop(1,'#e8f5ff');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h*.35);ctx.fillStyle='#1f7c42';ctx.fillRect(0,h*.35,w,h*.65);ctx.fillStyle='#c69a61';ctx.fillRect(0,h*.48,w,h*.47);for(let i=0;i<=runners.length;i++){const y=h*.48+i*(h*.47/runners.length);ctx.strokeStyle='#ffffff88';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}const start=w*.07,goal=w*.93;ctx.fillStyle='#ffe34f';ctx.fillRect(start-5,h*.42,10,h*.55);for(let y=h*.42;y<h*.97;y+=20){ctx.fillStyle=((y/20)|0)%2?'#fff':'#111';ctx.fillRect(goal-7,y,14,20)}runners.forEach((r,i)=>{const laneY=h*.48+(i+.5)*(h*.47/runners.length),x=start+(goal-start)*r.display;drawHorse(ctx,x,laneY,r,i)});ctx.fillStyle='#103d22';ctx.fillRect(0,h*.95,w,h*.05);ctx.fillStyle='#fff';ctx.font=`700 ${Math.max(16,w*.018)}px sans-serif`;ctx.fillText('START',start-30,h*.44);ctx.fillText('GOAL',goal-28,h*.44)}
+function drawTrack(ctx,runners){const w=ctx.canvas.width,h=ctx.canvas.height;ctx.clearRect(0,0,w,h);const sky=ctx.createLinearGradient(0,0,0,h*.45);sky.addColorStop(0,'#82c9ff');sky.addColorStop(1,'#e8f5ff');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h*.35);ctx.fillStyle='#1f7c42';ctx.fillRect(0,h*.35,w,h*.65);ctx.fillStyle='#c69a61';ctx.fillRect(0,h*.48,w,h*.47);for(let i=0;i<=runners.length;i++){const y=h*.48+i*(h*.47/runners.length);ctx.strokeStyle='#ffffff88';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}const start=w*.07,goal=w*.93;ctx.fillStyle='#ffe34f';ctx.fillRect(start-5,h*.42,10,h*.55);for(let y=h*.42;y<h*.97;y+=20){ctx.fillStyle=((y/20)|0)%2?'#fff':'#111';ctx.fillRect(goal-7,y,14,20)}runners.forEach((r,i)=>{const lane=Number.isFinite(r.lane)?r.lane:i;const laneY=h*.48+(lane+.5)*(h*.47/runners.length),x=start+(goal-start)*r.display;drawHorse(ctx,x,laneY,r,lane)});ctx.fillStyle='#103d22';ctx.fillRect(0,h*.95,w,h*.05);ctx.fillStyle='#fff';ctx.font=`700 ${Math.max(16,w*.018)}px sans-serif`;ctx.fillText('START',start-30,h*.44);ctx.fillText('GOAL',goal-28,h*.44)}
 function drawHorse(ctx,x,y,r,i){const scale=Math.max(.75,Math.min(1.25,ctx.canvas.width/1050));ctx.save();ctx.translate(x,y);ctx.fillStyle='#4b2c18';ctx.beginPath();ctx.ellipse(0,0,25*scale,12*scale,0,0,Math.PI*2);ctx.fill();ctx.fillRect(13*scale,-9*scale,17*scale,8*scale);ctx.beginPath();ctx.arc(29*scale,-9*scale,7*scale,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#2f1b10';ctx.lineWidth=4*scale;const phase=performance.now()/80+i;for(const dx of [-13,10]){ctx.beginPath();ctx.moveTo(dx*scale,8*scale);ctx.lineTo((dx+Math.sin(phase)*8)*scale,24*scale);ctx.stroke()}ctx.fillStyle=COLORS[(r.number-1)%COLORS.length];ctx.beginPath();ctx.arc(-1*scale,-15*scale,10*scale,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle=r.number===2?'#fff':'#111';ctx.font=`900 ${12*scale}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(r.number,-1*scale,-15*scale);if(r.whipFlash&&performance.now()<r.whipFlash){ctx.strokeStyle='#ffe45b';ctx.lineWidth=4*scale;ctx.beginPath();ctx.moveTo(-8*scale,-25*scale);ctx.lineTo(12*scale,-38*scale);ctx.stroke()}ctx.restore()}
-function makeProgress(runners){const box=$('progressTrack');box.innerHTML='';const map=new Map();runners.forEach((r,i)=>{const d=document.createElement('div');d.className='progress-dot';d.textContent=r.number;d.style.background=COLORS[(r.number-1)%COLORS.length];d.style.color=r.number===2?'white':'#111';d.style.top=`${12+(i/(runners.length-1||1))*76}%`;box.appendChild(d);map.set(r.number,d)});updateProgress(map,runners);return map}
+function makeProgress(runners){const box=$('progressTrack');box.innerHTML='';const map=new Map();runners.forEach((r,i)=>{const d=document.createElement('div');d.className='progress-dot';d.textContent=r.number;d.style.background=COLORS[(r.number-1)%COLORS.length];d.style.color=r.number===2?'white':'#111';const lane=Number.isFinite(r.lane)?r.lane:i;d.style.top=`${12+(lane/(runners.length-1||1))*76}%`;box.appendChild(d);map.set(r.number,d)});updateProgress(map,runners);return map}
 function updateProgress(map,runners){runners.forEach(r=>{const el=map.get(r.number);if(el)el.style.left=`${7+r.display*86}%`})}
 function commentary(c,o){const a=o[0],b=o[1]||o[0],c3=o[2]||b;const esc=o.find(x=>x.style==='逃げ'),front=o.find(x=>x.style==='先行'),closer=[...o].reverse().find(x=>x.style==='追込')||o.find(x=>x.style==='差し');return [
 `スタート！ ${esc?`${esc.number}番${esc.name}がロケットスタート！ 一気に先頭へ！`:`${a.number}番${a.name}が好発！`}`,
@@ -451,7 +468,7 @@ function nextRace(){
   state.tournament.current++;state.raceNo=state.tournament.current;const scheduled=state.tournament.schedule[state.tournament.current-1];state.venue=scheduled.venue;state.race=scheduled.race;state.selection=null;state.result=[];state.seed=Date.now();state.members.forEach(m=>m.ready=null);const msg={type:'nextRound',config:raceConfig(),members:[...state.members.values()]};broadcast(msg);broadcastMembers();renderLobby();show('lobby');return
  }
  state.raceNo++;state.selection=null;state.result=[];state.seed=Date.now();show('home')}
-function replay(){const payload={seed:state.seed,field:state.field,startAt:Date.now()+1500,config:raceConfig()};state.selection=state.selection;startCountdown(payload)}
+function replay(){state.seed=Date.now()+Math.floor(Math.random()*1000000);const payload={seed:state.seed,field:state.field,startAt:Date.now()+1500,config:raceConfig()};startCountdown(payload)}
 function shareRoom(){const url=$('shareBtn').dataset.url||inviteUrl();if(navigator.share)navigator.share({title:'川上ウマウマレース',text:'QR招待からオンライン大会に参加してな！',url}).catch(()=>{});else navigator.clipboard?.writeText(url)}
 
 function startPartySetup(){state.mode='party';state.partyEntries=[];state.partyIndex=0;state.partyEditing=false;state.selection=null;state.result=[];show('partySetup')}
