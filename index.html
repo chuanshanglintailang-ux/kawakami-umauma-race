@@ -22,7 +22,7 @@
       <div class="home-actions">
         <button id="partyBtn" class="primary big party-home">端末1台でみんなで遊ぶ<span>有名馬・有名騎手・オリジナル名で秘密対戦</span></button>
         <button id="hostBtn" class="big">ルームを作る<span>QRコードを共有して友達を招待</span></button>
-        <div class="qr-only-note card"><b>参加者は主催者のQRコードを読み取って参加</b><span>ルーム名の手入力は廃止しました</span></div>
+        <div class="qr-only-note card"><b>参加者は主催者のQRコードを読み取って参加</b></div>
       </div>
       <p class="fine">ゲーム内ポイントのみ。実際のお金は使用しません。</p>
     </div>
@@ -121,7 +121,7 @@
   <section id="hostSetup" class="screen">
     <div class="screen-title"><small>CREATE ROOM</small><h2>ルームを作る</h2></div>
     <div class="card form-card">
-      <div class="privacy-banner">合言葉は不要です。ルームを作成すると専用QRコードが自動発行されます。</div>
+      <div class="privacy-banner">大会設定を決めてルームを作ると、参加専用QRコードが自動発行されます。</div>
       <div class="grid2">
         <label>開催レース数<select id="hostRaceCount"><option value="1">1レース</option><option value="2">2レース</option><option value="3">3レース</option><option value="4">4レース</option><option value="5">5レース</option><option value="6">6レース</option><option value="7">7レース</option><option value="8">8レース</option><option value="9">9レース</option><option value="10">10レース</option></select></label>
         <label>出走頭数<select id="hostFieldSize"><option>8</option><option selected>10</option><option>12</option></select></label>
@@ -189,7 +189,7 @@
   <section id="waiting" class="screen"><div class="center card"><div class="spinner"></div><h2>主催者のスタート待ち</h2><p id="waitingText">参加者の準備を待っています。</p></div></section>
   <section id="countdown" class="screen gate-screen">
     <div class="gate-stage">
-      <div class="gate-title"><small id="fanfareLabel">G1 ORIGINAL FANFARE</small><h2 id="gateRaceTitle">---</h2><p id="gateStatus">各馬ゲートイン中…</p></div>
+      <div class="gate-title"><small id="fanfareLabel">RACE FANFARE</small><h2 id="gateRaceTitle">---</h2><p id="gateStatus">各馬ゲートイン中…</p></div>
       <div id="startingGate" class="starting-gate"></div>
       <div class="countdown compact"><b id="countNum">3</b></div>
     </div>
@@ -223,7 +223,7 @@
     <button id="finalHomeBtn" class="primary big">ホームへ戻る</button>
   </section>
 </main>
-<footer>川上ウマウマレース v23 / 非公式ファンメイドゲーム</footer>
+<footer>川上ウマウマレース v24 / 非公式ファンメイドゲーム</footer>
 <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="app.js"></script>
