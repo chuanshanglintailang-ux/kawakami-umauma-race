@@ -231,55 +231,149 @@ async function startCountdown(payload){
  runRace(payload,token)
 }
 function officialPlan(field,seed){
- const rnd=seeded(seed^0x9e3779b9);const rows=field.map(h=>({h,score:baseScore(h)+(rnd()-.5)*18})).sort((a,b)=>b.score-a.score);
- const base=44.65+rnd()*.30,gap=field.length>=10?.10:field.length>=7?.13:.18;
- // レースは約45秒。1着が見て分かるハナ〜半馬身差を保つ。
- return rows.map((x,rank)=>({...x.h,finalRank:rank,finishWall:base+rank*gap+rnd()*.018}))
+ const rnd=seeded(seed^0x9e3779b9);
+ const rows=field.map(h=>({h,score:baseScore(h)+(rnd()-.5)*16})).sort((a,b)=>b.score-a.score);
+ const winnerTime=44.9+rnd()*.18;
+ // 1着が肉眼で分かる僅差。2着以下も完全な横並びにはしない。
+ const gaps=[0,.34,.66,.98,1.28,1.56,1.82,2.06,2.28,2.49,2.69,2.88,3.06,3.23,3.39,3.54,3.68,3.81];
+ return rows.map((x,rank)=>({...x.h,finalRank:rank,finishWall:winnerTime+(gaps[rank]??(2.6+rank*.16))}))
+}
+function styleBand(style,phase){
+ // 前半は脚質を強く維持し、中盤から差し・追込が進出する。
+ if(phase<.36){
+  if(style==='逃げ')return .060;
+  if(style==='先行')return .030;
+  if(style==='差し')return -.018;
+  if(style==='追込')return -.045;
+ }
+ if(phase<.72){
+  const u=(phase-.36)/.36;
+  if(style==='逃げ')return .060-.072*u;
+  if(style==='先行')return .030-.012*u;
+  if(style==='差し')return -.018+.050*u;
+  if(style==='追込')return -.045+.080*u;
+ }
+ const u=(phase-.72)/.28;
+ if(style==='逃げ')return -.012-.012*u;
+ if(style==='先行')return .018-.005*u;
+ if(style==='差し')return .032+.016*u;
+ if(style==='追込')return .035+.030*u;
+ return 0
+}
+function buildRaceTimeline(runners,seed,distance){
+ const rnd=seeded(seed^0x35a1f00d);
+ const times=[0,5,10,16,23,30,35,39,42,44,45];
+ const phases=times.map(t=>t/45);
+ const compressionStart=Math.max(.50,1-700/distance);
+ runners.forEach((r,idx)=>{
+  const pts=[];
+  let prev=0;
+  const groupPhase=rnd()*Math.PI*2;
+  const personalPhase=rnd()*Math.PI*2;
+  const pulse=[0,(rnd()-.5)*.018,(rnd()-.5)*.026,(rnd()-.5)*.030,(rnd()-.5)*.034,(rnd()-.5)*.036,(rnd()-.5)*.030,(rnd()-.5)*.026,(rnd()-.5)*.020,(rnd()-.5)*.012,0];
+  phases.forEach((ph,k)=>{
+   let raw=ph;
+   const band=styleBand(r.style,ph)*(1-smooth((ph-compressionStart)/Math.max(.08,1-compressionStart))*.80);
+   // 同脚質同士でも細かく順位が入れ替わる波。時間が進んでも停止させない。
+   const groupWave=Math.sin(ph*8.5+groupPhase)*.015*Math.sin(Math.PI*ph);
+   const personalWave=Math.sin(ph*15.5+personalPhase)*.010*Math.sin(Math.PI*ph);
+   raw+=band+groupWave+personalWave+pulse[k];
+   // 残り700mから徐々に馬群を詰める。ただし横一列にはしない。
+   const pack=smooth((ph-compressionStart)/Math.max(.08,.92-compressionStart));
+   const liveRankBias=(r.finalRank*.0048);
+   const packTarget=ph-liveRankBias;
+   raw=raw*(1-pack*.72)+packTarget*(pack*.72);
+   // 残り300mでは一度順位を揺らし、最後50mだけ公式着順へ収束。
+   if(ph>=.875&&ph<.978){
+    const heat=Math.sin((ph-.875)/.103*Math.PI);
+    raw+=(r.finalRank%2===0?1:-1)*heat*(.010+rnd()*.004);
+   }
+   if(k===times.length-1){
+    const finishAt45=Math.max(.935,1-r.finalRank*.0085);
+    raw=finishAt45;
+   }
+   const minStep=k===0?0:.012;
+   raw=Math.max(prev+minStep,raw);
+   raw=Math.min(k===times.length-1?1:0.992,raw);
+   pts.push(raw);prev=raw;
+  });
+  r.timeline={times,points:pts};
+ })
+}
+function sampleTimeline(r,wall){
+ const {times,points}=r.timeline;
+ if(wall<=0)return 0;
+ for(let i=1;i<times.length;i++){
+  if(wall<=times[i]){
+   const u=smooth((wall-times[i-1])/(times[i]-times[i-1]));
+   return points[i-1]+(points[i]-points[i-1])*u
+  }
+ }
+ // 45秒以降は各馬の公式ゴール時刻まで必ず前進し続ける。
+ const at45=points[points.length-1];
+ if(wall<r.finishWall){
+  const u=(wall-45)/Math.max(.08,r.finishWall-45);
+  return at45+(1.001-at45)*Math.max(0,Math.min(1,u))
+ }
+ return 1.001+Math.min(.022,(wall-r.finishWall)*.018)
 }
 function controlledRunner(runners){if(state.mode==='solo')return runners.find(r=>r.number===state.selection);return runners.find(r=>r.playerId===state.player?.id)}
-function applyWhipEvent(data){if(!data?.tapId||state.whipSeen.has(data.tapId))return;state.whipSeen.add(data.tapId);const rt=state.raceRuntime;if(!rt)return;const r=rt.runners.find(x=>data.playerId?x.playerId===data.playerId:x.number===data.number);if(!r||r.finish||r.display<.76)return;r.whipTaps=(r.whipTaps||0)+1;const benefit=r.whipTaps<=8?.055:r.whipTaps<=12?.028:.008;r.finishWall=Math.max(rt.wall+.35,r.finishWall-benefit);r.whipFlash=performance.now()+180}
+function applyWhipEvent(data){if(!data?.tapId||state.whipSeen.has(data.tapId))return;state.whipSeen.add(data.tapId);const rt=state.raceRuntime;if(!rt)return;const r=rt.runners.find(x=>data.playerId?x.playerId===data.playerId:x.number===data.number);if(!r||r.finish||r.display<.76)return;r.whipTaps=(r.whipTaps||0)+1;const benefit=r.whipTaps<=8?.045:r.whipTaps<=12?.022:.006;r.finishWall=Math.max(rt.wall+.55,r.finishWall-benefit);r.whipFlash=performance.now()+180}
 function tapWhip(){if(state.mode!=='host'&&state.mode!=='join')return;const rt=state.raceRuntime;if(!rt)return;const r=controlledRunner(rt.runners);if(!r||r.finish||r.display<.76)return;const data={type:'whip',tapId:`${state.player?.id||'solo'}-${Date.now()}-${Math.random()}`,playerId:r.playerId||null,number:r.number};applyWhipEvent(data);if(state.mode==='join')sendHost(data);else if(state.mode==='host')broadcast(data)}
 function runRace(payload,token=state.navToken){
- const canvas=$('track'),ctx=canvas.getContext('2d');resizeCanvas(canvas);const plan=officialPlan(payload.field,payload.seed),rnd=seeded(payload.seed);
- const runners=plan.map((h,i)=>({...h,display:0,finish:false,lane:i,ph1:rnd()*Math.PI*2,ph2:rnd()*Math.PI*2,swap1:.22+rnd()*.20,swap2:.46+rnd()*.20,swapPower1:(rnd()-.5)*.10,swapPower2:(rnd()-.5)*.12,whipTaps:0,actualFinish:null}));
- state.whipSeen=new Set();state.raceRuntime={runners,wall:0};const dots=makeProgress(runners);$('liveTitle').textContent=state.race.name;$('liveCond').textContent=conditionText();const chosen=controlledRunner(runners);const banner=$('myHorseBanner');if(chosen&&(state.mode==='host'||state.mode==='join'||state.mode==='party')){banner.hidden=false;banner.innerHTML=`あなたが選んだのは <span style="background:${COLORS[(chosen.number-1)%COLORS.length]};color:${chosen.number===2?'#fff':'#111'}">${chosen.number}</span>番 <b>${escapeHtml(chosen.name)}</b>`}else banner.hidden=true;$('whipPanel').hidden=true;
- const firstFinish=Math.min(...runners.map(r=>r.finishWall)),lastFinish=Math.max(...runners.map(r=>r.finishWall));let sequenceStart=null,raceStart=null,lastFrame=null,lastCall=-1,done=false;
+ const canvas=$('track'),ctx=canvas.getContext('2d');resizeCanvas(canvas);
+ const plan=officialPlan(payload.field,payload.seed),rnd=seeded(payload.seed^0x51f15e);
+ const runners=plan.map((h,i)=>({...h,display:0,finish:false,lane:i,whipTaps:0,actualFinish:null,lastDisplay:0,visualSpeed:0}));
+ buildRaceTimeline(runners,payload.seed,state.race.distance);
+ state.whipSeen=new Set();state.raceRuntime={runners,wall:0};
+ const dots=makeProgress(runners);$('liveTitle').textContent=state.race.name;$('liveCond').textContent=conditionText();
+ const chosen=controlledRunner(runners),banner=$('myHorseBanner');
+ if(chosen&&(state.mode==='host'||state.mode==='join'||state.mode==='party')){banner.hidden=false;banner.innerHTML=`あなたが選んだのは <span style="background:${COLORS[(chosen.number-1)%COLORS.length]};color:${chosen.number===2?'#fff':'#111'}">${chosen.number}</span>番 <b>${escapeHtml(chosen.name)}</b>`}else banner.hidden=true;
+ $('whipPanel').hidden=true;
+ const lastFinish=Math.max(...runners.map(r=>r.finishWall));
+ let sequenceStart=null,raceStart=null,lastFrame=null,lastCall=-1,done=false,lastLeader=null;
  function frame(ts){
-  if(token!==state.navToken)return;if(sequenceStart===null)sequenceStart=ts;const sequence=(ts-sequenceStart)/1000;
-  // 0〜0.55秒は扉だけ開き、0.55〜1.35秒で同じ座標から滑らかに発進。
-  const gateOpen=Math.min(1,sequence/.55);const launch=Math.max(0,Math.min(1,(sequence-.55)/.80));
-  if(sequence<1.35){const eased=launch*launch*(3-2*launch);runners.forEach(h=>h.display=.0025*eased);drawRaceScene(ctx,runners,{gateOpen,showGate:true});updateProgress(dots,runners);$('remaining').textContent=`${state.race.distance}m`;requestAnimationFrame(frame);return}
-  if(raceStart===null){raceStart=ts;$('commentary').textContent='スタート！ 各馬なめらかに加速していきます。'}
-  const wall=(ts-raceStart)/1000;state.raceRuntime.wall=wall;const dt=Math.min(.05,Math.max(.001,lastFrame===null?1/60:(ts-lastFrame)/1000));lastFrame=ts;const phase=Math.max(0,Math.min(1,wall/firstFinish));
-  const compressionStart=Math.max(.55,1-700/state.race.distance);
+  if(token!==state.navToken)return;
+  if(sequenceStart===null)sequenceStart=ts;
+  const sequence=(ts-sequenceStart)/1000;
+  const gateOpen=Math.min(1,sequence/.55),launch=Math.max(0,Math.min(1,(sequence-.55)/.90));
+  if(sequence<1.45){
+   const eased=launch*launch*(3-2*launch);
+   runners.forEach(h=>h.display=.0035*eased);
+   drawRaceScene(ctx,runners,{gateOpen,showGate:true});updateProgress(dots,runners);$('remaining').textContent=`${state.race.distance}m`;requestAnimationFrame(frame);return
+  }
+  if(raceStart===null){raceStart=ts;lastFrame=ts;$('commentary').textContent='スタート！ 全馬が滑らかに加速していきます。'}
+  const wall=(ts-raceStart)/1000;state.raceRuntime.wall=wall;
+  const dt=Math.min(.05,Math.max(.001,(ts-lastFrame)/1000));lastFrame=ts;
   runners.forEach(h=>{
-   // 各馬固有の約45秒のタイムラインを使い、毎フレーム必ず前進させる。
-   const runnerPhase=Math.max(0,wall/h.finishWall);
-   const style=styleOffset(h.style,phase);
-   const wave=(Math.sin(phase*22+h.ph1)*.020+Math.sin(phase*43+h.ph2)*.010)*Math.sin(Math.PI*Math.min(1,phase));
-   const swap=h.swapPower1*Math.exp(-Math.pow((phase-h.swap1)/.10,2))+h.swapPower2*Math.exp(-Math.pow((phase-h.swap2)/.095,2));
-   // 残り700mから徐々に混戦へ。脚質差は残しつつ、最後は明確な僅差にする。
-   const compression=smooth((phase-compressionStart)/Math.max(.12,.94-compressionStart));
-   const photo=smooth((phase-.94)/.06);
-   const rankDrag=h.finalRank*.0065;
-   let target=runnerPhase+(style+wave+swap)*(1-compression*.82);
-   target=target*(1-compression)+(runnerPhase-rankDrag*compression)*compression;
-   if(photo>0)target=target*(1-photo)+(runnerPhase-rankDrag)*photo;
-   const desired=Math.min(1.028,target);
-   const minSpeed=(.0105+.0105*(1-compression)+.006*photo)*dt;
-   const catchUp=Math.max(0,(desired-h.display)*Math.min(.32,dt*8.5));
-   h.display=Math.min(1.028,h.display+Math.max(minSpeed,catchUp));
-   if(wall>=h.finishWall){
-    h.finish=true;h.actualFinish=h.finishWall;
-    const coast=Math.min(.014,(wall-h.finishWall)*.028);
-    h.display=Math.max(h.display,1.002+coast);
-   }
+   const sampled=sampleTimeline(h,wall);
+   // サンプル曲線が緩い区間でも毎フレーム必ず前進。停止・後退は絶対にしない。
+   const minimumAdvance=dt*.00045;
+   h.lastDisplay=h.display;
+   h.display=Math.max(h.display+minimumAdvance,sampled);
+   h.visualSpeed=(h.display-h.lastDisplay)/dt;
+   if(wall>=h.finishWall){h.finish=true;h.actualFinish=h.finishWall}
   });
-  drawRaceScene(ctx,runners,{showGate:false});updateProgress(dots,runners);const order=[...runners].sort((a,b)=>b.display-a.display||a.finalRank-b.finalRank),lead=order[0],control=controlledRunner(runners);
-  $('clock').textContent=`0:${Math.min(59.9,wall).toFixed(1).padStart(4,'0')}`;$('remaining').textContent=`${Math.max(0,Math.round(state.race.distance*(1-lead.display)))}m`;const leaderColor=COLORS[(lead.number-1)%COLORS.length];$('leaderText').innerHTML=`<span class="leader-num" style="background:${leaderColor};color:${lead.number===2?'#fff':'#111'}">${lead.number}</span><span>先頭 ${escapeHtml(lead.name)}</span>`;
+  drawRaceScene(ctx,runners,{showGate:false});updateProgress(dots,runners);
+  const order=[...runners].sort((a,b)=>b.display-a.display||a.finishWall-b.finishWall),lead=order[0],control=controlledRunner(runners);
+  $('clock').textContent=`0:${Math.min(59.9,wall).toFixed(1).padStart(4,'0')}`;
+  $('remaining').textContent=`${Math.max(0,Math.round(state.race.distance*(1-Math.min(1,lead.display))))}m`;
+  const leaderColor=COLORS[(lead.number-1)%COLORS.length];$('leaderText').innerHTML=`<span class="leader-num" style="background:${leaderColor};color:${lead.number===2?'#fff':'#111'}">${lead.number}</span><span>先頭 ${escapeHtml(lead.name)}</span>`;
   const whipReady=(state.mode==='host'||state.mode==='join')&&control&&!control.finish&&control.display>=.76;$('whipPanel').hidden=!whipReady;if(whipReady)$('whipHorse').textContent=`${control.number}番 ${control.name}を追う！`;
-  const c=Math.floor(wall/4);if(c!==lastCall){lastCall=c;$('commentary').textContent=phase>.94?'ゴール前、全馬が一団！ わずかに前へ出た馬がいる！':commentary(c,order)}
-  if(runners.every(h=>h.finish)||wall>lastFinish+1){if(!done){done=true;$('whipPanel').hidden=true;const sorted=[...runners].sort((a,b)=>a.finishWall-b.finishWall||a.number-b.number);const base=estimateSeconds(state.race.distance),first=sorted[0].finishWall;state.result=sorted.map(h=>({...h,officialTime:base+(h.finishWall-first)}));state.raceRuntime=null;setTimeout(showResult,900)}return}
+  const call=Math.floor(wall/2.8);
+  const remaining=Math.max(0,state.race.distance*(1-Math.min(1,lead.display)));
+  const leaderChanged=lastLeader!==null&&lastLeader!==lead.number;lastLeader=lead.number;
+  if(call!==lastCall||leaderChanged){
+   lastCall=call;
+   if(remaining<=55)$('commentary').textContent=`ゴール目前！ ${order[0].number}番と${order[1]?.number||order[0].number}番が僅差、わずかに${order[0].number}番が前！`;
+   else if(remaining<=300)$('commentary').textContent=`残り300m！ ${order[0].name}、${order[1]?.name||''}、${order[2]?.name||''}が走りながら激しく抜きつ抜かれつ！`;
+   else if(remaining<=700)$('commentary').textContent=`残り700m！ 馬群が徐々に詰まり、${lead.name}を各馬が追う！`;
+   else if(leaderChanged)$('commentary').textContent=`${lead.number}番${lead.name}が前へ！ 先頭が入れ替わった！`;
+   else $('commentary').textContent=commentary(call,order)
+  }
+  if(runners.every(h=>h.finish)||wall>lastFinish+1){
+   if(!done){done=true;$('whipPanel').hidden=true;const sorted=[...runners].sort((a,b)=>a.finishWall-b.finishWall||a.number-b.number);const base=estimateSeconds(state.race.distance),first=sorted[0].finishWall;state.result=sorted.map(h=>({...h,officialTime:base+(h.finishWall-first)}));state.raceRuntime=null;setTimeout(showResult,900)}return
+  }
   requestAnimationFrame(frame)
  }
  requestAnimationFrame(frame)
