@@ -303,8 +303,8 @@ async function startCountdown(payload){
  const canvas=$('track'),ctx=canvas.getContext('2d',{alpha:false,desynchronized:true});resizeCanvas(canvas);const preview=payload.field.map((h,i)=>({...h,display:0,lane:i}));
  const previewChosen=renderMyHorseBanner(preview);if(previewChosen)previewChosen.isSelected=true;
  let previewActive=true;
- const drawPreview=()=>{if(!previewActive||token!==state.navToken)return;drawPreRaceGate(ctx,preview,0);requestAnimationFrame(drawPreview)};
- raceRedraw=()=>drawPreRaceGate(ctx,preview,0);drawPreview();
+ const drawPreview=()=>{if(!previewActive||token!==state.navToken)return;drawPreRaceGate(ctx,preview,0)};
+ raceRedraw=drawPreview;drawPreview();
  let played=false;
  try{await Promise.all([unlockAudio(),primeMediaAudio()]);if(token!==state.navToken)return;$('leaderText').innerHTML='<span>🎺 ファンファーレ演奏中</span>';$('commentary').textContent='全馬ゲートイン。ファンファーレ演奏中です。';played=await Promise.race([playRaceFanfare(state.race.name),new Promise(resolve=>setTimeout(()=>resolve(false),8500))])}catch(e){console.warn('race fanfare error',e)}
  if(token!==state.navToken)return;
@@ -464,7 +464,7 @@ function runRace(payload,token=state.navToken){
  raceRedraw=()=>drawRaceScene(ctx,runners,{showGate:false});
  const lastFinish=Math.max(...runners.map(r=>r.finishWall));
  const mobile=matchMedia('(max-width: 700px)').matches;
- const renderInterval=1000/(mobile?45:60); // 安定したフレーム間隔を優先
+ const renderInterval=1000/60; // iPhoneも画面更新に同期して60fpsを狙う
  const physicsStep=1/60;
  const order=runners.slice();
  let sequenceStart=null,raceStart=null,lastFrame=null,lastRender=0,accumulator=0,done=false,lastLeader=null,lastUi=0,lastProgress=0,lastOrderUpdate=0,lastCall=-1,lastLeaderText='';
@@ -486,15 +486,13 @@ function runRace(payload,token=state.navToken){
   const sequence=(ts-sequenceStart)/1000,gateOpen=Math.min(1,sequence/.55),launch=Math.max(0,Math.min(1,(sequence-.55)/.90));
   if(sequence<1.45){
    const eased=launch*launch*(3-2*launch);for(let i=0;i<runners.length;i++)runners[i].display=.0035*eased;
-   if(ts-lastRender>=renderInterval){drawRaceScene(ctx,runners,{gateOpen,showGate:true,animTime:ts,mobile});lastRender=ts}
-   if(ts-lastProgress>100){updateProgress(dots,runners);lastProgress=ts}if(ts-lastUi>200){$('remaining').textContent=`${state.race.distance}m`;lastUi=ts}
+   if(ts-lastRender>=renderInterval){drawRaceScene(ctx,runners,{gateOpen,showGate:true,animTime:ts,mobile});updateProgress(dots,runners);lastProgress=ts;lastRender=ts}if(ts-lastUi>200){$('remaining').textContent=`${state.race.distance}m`;lastUi=ts}
    requestAnimationFrame(frame);return
   }
   if(raceStart===null){raceStart=ts;lastFrame=ts;accumulator=0;$('commentary').textContent='スタート！ 全馬が滑らかに加速していきます。'}
   const wall=(ts-raceStart)/1000;state.raceRuntime.wall=wall;accumulator+=rawDt;
   let steps=0;while(accumulator>=physicsStep&&steps<5){updatePhysics(wall-accumulator+physicsStep,physicsStep);accumulator-=physicsStep;steps++}
-  if(ts-lastRender>=renderInterval){drawRaceScene(ctx,runners,{showGate:false,animTime:ts,mobile});lastRender=ts}
-  if(ts-lastProgress>100){updateProgress(dots,runners);lastProgress=ts}
+  if(ts-lastRender>=renderInterval){drawRaceScene(ctx,runners,{showGate:false,animTime:ts,mobile});updateProgress(dots,runners);lastProgress=ts;lastRender=ts}
   if(ts-lastOrderUpdate>125){order.sort((a,b)=>b.display-a.display||a.finishWall-b.finishWall);lastOrderUpdate=ts}
   const lead=order[0],control=controlledRunner(runners);
   if(ts-lastUi>150){
@@ -528,8 +526,16 @@ function raceDramaOffset(r,t){
 function resizeCanvas(canvas){const rect=canvas.getBoundingClientRect(),mobile=matchMedia('(max-width: 700px)').matches,dpr=Math.min(mobile?1.0:1.5,devicePixelRatio||1),w=Math.max(mobile?520:640,Math.round(rect.width*dpr)),h=Math.max(mobile?350:420,Math.round(rect.height*dpr));if(canvas.width===w&&canvas.height===h)return false;canvas.width=w;canvas.height=h;canvas._raceBg=null;canvas._horseSprites=null;return true}
 function drawTrack(ctx,runners){const w=ctx.canvas.width,h=ctx.canvas.height;ctx.clearRect(0,0,w,h);const sky=ctx.createLinearGradient(0,0,0,h*.45);sky.addColorStop(0,'#82c9ff');sky.addColorStop(1,'#e8f5ff');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h*.35);ctx.fillStyle='#1f7c42';ctx.fillRect(0,h*.35,w,h*.65);ctx.fillStyle='#c69a61';ctx.fillRect(0,h*.48,w,h*.47);for(let i=0;i<=runners.length;i++){const y=h*.48+i*(h*.47/runners.length);ctx.strokeStyle='#ffffff88';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}const start=w*.07,goal=w*.93;ctx.fillStyle='#ffe34f';ctx.fillRect(start-5,h*.42,10,h*.55);for(let y=h*.42;y<h*.97;y+=20){ctx.fillStyle=((y/20)|0)%2?'#fff':'#111';ctx.fillRect(goal-7,y,14,20)}runners.forEach((r,i)=>{const lane=Number.isFinite(r.lane)?r.lane:i;const laneY=h*.48+(lane+.5)*(h*.47/runners.length),x=start+(goal-start)*r.display;drawHorse(ctx,x,laneY,r,lane)});ctx.fillStyle='#103d22';ctx.fillRect(0,h*.95,w,h*.05);ctx.fillStyle='#fff';ctx.font=`700 ${Math.max(16,w*.018)}px sans-serif`;ctx.fillText('START',start-30,h*.44);ctx.fillText('GOAL',goal-28,h*.44)}
 function drawHorse(ctx,x,y,r,i,animTime=performance.now(),mobile=false){const scale=Math.max(.75,Math.min(1.25,ctx.canvas.width/1050));ctx.save();ctx.translate(x,y);if(r.isSelected){ctx.save();ctx.strokeStyle='#ffe45b';if(!mobile){ctx.shadowColor='#ffe45b';ctx.shadowBlur=10*scale}ctx.lineWidth=(mobile?3:4)*scale;ctx.beginPath();ctx.ellipse(0,-3*scale,40*scale,30*scale,0,0,Math.PI*2);ctx.stroke();ctx.restore()}ctx.fillStyle='#4b2c18';ctx.beginPath();ctx.ellipse(0,0,25*scale,12*scale,0,0,Math.PI*2);ctx.fill();ctx.fillRect(13*scale,-9*scale,17*scale,8*scale);ctx.beginPath();ctx.arc(29*scale,-9*scale,7*scale,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#2f1b10';ctx.lineWidth=4*scale;const phase=animTime/80+i;for(const dx of [-13,10]){ctx.beginPath();ctx.moveTo(dx*scale,8*scale);ctx.lineTo((dx+Math.sin(phase)*8)*scale,24*scale);ctx.stroke()}ctx.fillStyle=COLORS[(r.number-1)%COLORS.length];ctx.beginPath();ctx.arc(-1*scale,-15*scale,10*scale,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle=r.number===2?'#fff':'#111';ctx.font=`900 ${12*scale}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(r.number,-1*scale,-15*scale);ctx.restore()}
-function makeProgress(runners){const box=$('progressTrack');box.innerHTML='';const map=new Map();runners.forEach((r,i)=>{const d=document.createElement('div');d.className='progress-dot';d.textContent=r.number;d.style.background=COLORS[(r.number-1)%COLORS.length];d.style.color=r.number===2?'white':'#111';const lane=Number.isFinite(r.lane)?r.lane:i;d.style.top=`${12+(lane/(runners.length-1||1))*76}%`;d.style.left='7%';d.style.willChange='transform';box.appendChild(d);map.set(r.number,d)});updateProgress(map,runners);return map}
-function updateProgress(map,runners){runners.forEach(r=>{const el=map.get(r.number);if(el)el.style.transform=`translate3d(${r.display*86}%,0,0)`})}
+function makeProgress(runners){
+ const box=$('progressTrack');box.innerHTML='';const map=new Map();
+ runners.forEach((r,i)=>{const d=document.createElement('div');d.className='progress-dot';d.textContent=r.number;d.style.background=COLORS[(r.number-1)%COLORS.length];d.style.color=r.number===2?'white':'#111';const lane=Number.isFinite(r.lane)?r.lane:i;d.style.top=`${12+(lane/(runners.length-1||1))*76}%`;d.style.left='0';d.style.willChange='transform';box.appendChild(d);map.set(r.number,d)});
+ updateProgress(map,runners);return map
+}
+function updateProgress(map,runners){
+ const box=$('progressTrack');if(!box)return;
+ const width=box.clientWidth||300,start=width*.07,finish=width*.93,span=Math.max(1,finish-start);
+ runners.forEach(r=>{const el=map.get(r.number);if(!el)return;const progress=Math.max(0,Math.min(1.02,Number(r.display)||0));el.style.transform=`translate3d(${start+span*progress}px,-50%,0)`})
+}
 function commentary(c,o){const a=o[0],b=o[1]||o[0],c3=o[2]||b;const esc=o.find(x=>x.style==='逃げ'),front=o.find(x=>x.style==='先行'),closer=[...o].reverse().find(x=>x.style==='追込')||o.find(x=>x.style==='差し');return [
 `スタート！ ${esc?`${esc.number}番${esc.name}がロケットスタート！ 一気に先頭へ！`:`${a.number}番${a.name}が好発！`}`,
 `${esc?`${esc.name}が大逃げ！ 後続を何馬身も引き離した！`:`${a.name}が先頭、${front?.name||b.name}が好位！`}`,
@@ -551,8 +557,10 @@ function settleTournament(result){
  state.tournament.rounds.push(round);syncLocalWalletFromTournament();broadcast({type:'roundStanding',tournament:state.tournament});broadcastMembers();renderTournamentRanking();
 }
 function sortedStandings(){return [...state.members.values()].map(m=>({...m,points:Number(state.tournament?.scores?.[m.id]??10000)})).sort((a,b)=>b.points-a.points||String(a.horse).localeCompare(String(b.horse),'ja'))}
-function renderTournamentRanking(){const box=$('roundRanking');if(!box)return;const rows=sortedStandings();box.hidden=false;box.innerHTML=`<h3>第${state.tournament.current}レース終了時点 総合ランキング</h3>${rows.map((m,i)=>`<div class="ranking-row"><span class="ranking-place">${i+1}</span><span><b>${escapeHtml(m.horse)}</b><small>騎手 ${escapeHtml(m.jockey?.name||'未設定')}</small></span><span class="ranking-points">${m.points.toLocaleString('ja-JP')}pt</span></div>`).join('')}`}
-function showTournamentFinal(){show('tournamentFinal');const rows=sortedStandings(),champ=rows[0];$('championBanner').innerHTML=champ?`<div class="crown">👑</div><small>総合優勝</small><h2>${escapeHtml(champ.horse)}</h2><p>騎手 ${escapeHtml(champ.jockey?.name||'未設定')}</p><b>${champ.points.toLocaleString('ja-JP')}pt</b>`:'結果がありません';$('finalRanking').innerHTML=rows.map((m,i)=>`<div class="ranking-row"><span class="ranking-place">${i+1}</span><span><b>${escapeHtml(m.horse)}</b><small>${i===0?'大会チャンピオン':'総合順位'}</small></span><span class="ranking-points">${m.points.toLocaleString('ja-JP')}pt</span></div>`).join('');$('roundHistory').innerHTML=`<h3>全${state.tournament.total}レース結果</h3>${(state.tournament.rounds||[]).map(r=>`<div class="round-chip"><span>第${r.raceNo}R ${escapeHtml(r.raceName)}</span><b>1着 ${escapeHtml(r.results?.[0]?.name||'---')}</b></div>`).join('')}`}
+function rankedStandings(){const rows=sortedStandings();let previous=null,rank=0;return rows.map((m,i)=>{if(previous===null||m.points!==previous)rank=i+1;previous=m.points;const tied=rows.some((x,j)=>j!==i&&x.points===m.points);return {...m,rank,tied}})}
+function rankLabel(m){return `${m.rank}位${m.tied?'タイ':''}`}
+function renderTournamentRanking(){const box=$('roundRanking');if(!box)return;const rows=rankedStandings();box.hidden=false;box.innerHTML=`<h3>第${state.tournament.current}レース終了時点 総合ランキング</h3>${rows.map(m=>`<div class="ranking-row"><span class="ranking-place">${rankLabel(m)}</span><span><b>${escapeHtml(m.horse)}</b><small>騎手 ${escapeHtml(m.jockey?.name||'未設定')}</small></span><span class="ranking-points">${m.points.toLocaleString('ja-JP')}pt</span></div>`).join('')}`}
+function showTournamentFinal(){show('tournamentFinal');const rows=rankedStandings(),champions=rows.filter(m=>m.rank===1),champ=champions[0];$('championBanner').innerHTML=champ?`<div class="crown">👑</div><small>${champions.length>1?'同率総合優勝':'総合優勝'}</small><h2>${champions.map(m=>escapeHtml(m.horse)).join('・')}</h2><p>${champions.map(m=>`騎手 ${escapeHtml(m.jockey?.name||'未設定')}`).join(' ／ ')}</p><b>${champ.points.toLocaleString('ja-JP')}pt</b>`:'結果がありません';$('finalRanking').innerHTML=rows.map(m=>`<div class="ranking-row"><span class="ranking-place">${rankLabel(m)}</span><span><b>${escapeHtml(m.horse)}</b><small>${m.rank===1?(m.tied?'同率大会チャンピオン':'大会チャンピオン'):'総合順位'}</small></span><span class="ranking-points">${m.points.toLocaleString('ja-JP')}pt</span></div>`).join('');$('roundHistory').innerHTML=`<h3>全${state.tournament.total}レース結果</h3>${(state.tournament.rounds||[]).map(r=>`<div class="round-chip"><span>第${r.raceNo}R ${escapeHtml(r.raceName)}</span><b>1着 ${escapeHtml(r.results?.[0]?.name||'---')}</b></div>`).join('')}`}
 function showResult(){show('result');const result=state.result;$('resultList').innerHTML=result.map((h,i)=>`<div class="result-row"><span class="place">${i+1}着</span><span class="horse-num" style="background:${COLORS[(h.number-1)%COLORS.length]};color:${h.number===2?'white':'#111'}">${h.number}</span><span><b>${escapeHtml(h.name)}</b><small>${escapeHtml(h.owner)}・${h.style}・騎手 ${escapeHtml(h.jockey?.name||'未設定')}</small></span><span class="time">${formatTime(h.officialTime)}${i?` +${(h.officialTime-result[0].officialTime).toFixed(2)}`:''}</span></div>`).join('');$('roundRanking').hidden=true;
  if(state.mode==='party'){$('nextBtn').textContent='パーティーモードをもう一度';$('payoutBox').classList.add('win');$('payoutBox').innerHTML=`<b>🏆 優勝 ${result[0].number}番 ${escapeHtml(result[0].name)}</b><br>騎手 ${escapeHtml(result[0].jockey?.name||'未設定')}`;return}
  const confirmed=getConfirmedBet(),selected=result.find(h=>Number(h.number)===Number(confirmed?.number)),rank=result.findIndex(h=>Number(h.number)===Number(confirmed?.number))+1,betType=confirmed?.betType||state.betType,betStake=Number(confirmed?.stake??state.stake),hit=betType==='win'?rank===1:rank>0&&rank<=3,odds=selected?(betType==='win'?selected.winOdds:selected.placeOdds):0,pay=hit?Math.floor(betStake*odds):0;

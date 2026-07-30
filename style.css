@@ -131,3 +131,6 @@
 .spectator-bet-chip small{font-size:10px;color:#a8c2b0}
 .spectator-bet-chip.pending{opacity:.7}
 @media(max-width:720px){.live-spectator-bets{padding:9px;margin-top:5px}.spectator-bet-title{align-items:flex-start}.spectator-bet-title small{display:none}.spectator-bet-chip{min-width:150px;padding:8px 10px}}
+/* v53: GPU-only live progress markers and tie-rank labels */
+.progress-dot{margin:0;transition:none;contain:layout style paint;backface-visibility:hidden}
+.ranking-place{min-width:58px;white-space:nowrap}
