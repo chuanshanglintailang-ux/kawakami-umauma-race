@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#07120d">
-  <title>川上ウマウマレース v17</title>
+  <title>川上ウマウマレース v19</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header class="topbar">
-  <button id="backBtn" class="back-btn" hidden>← 戻る</button>
+  <div class="nav-actions"><button id="backBtn" class="back-btn" hidden>← 戻る</button><button id="homeBtn" class="home-btn" hidden>⌂ ホーム</button></div>
   <div class="brand"><small>KAWAKAMI UMAUMA RACE</small><h1>川上ウマウマレース</h1></div>
   <div class="wallet">所持 <b id="wallet">10,000</b>pt</div>
 </header>
@@ -20,8 +20,7 @@
       <p class="eyebrow">ONLINE HORSE RACING PARTY</p>
       <h2>予想して、賭けて、友達の馬と走れ。</h2>
       <div class="home-actions">
-        <button id="soloBtn" class="primary big">ひとりで遊ぶ<span>歴代名馬で単勝・複勝</span></button>
-        <button id="partyBtn" class="big party-home">端末1台でみんなで遊ぶ<span>名前を秘密にして順番に登録</span></button>
+        <button id="partyBtn" class="primary big party-home">端末1台でみんなで遊ぶ<span>有名馬・有名騎手・オリジナル名で秘密対戦</span></button>
         <button id="hostBtn" class="big">ルームを作る<span>ルーム名を決めて主催</span></button>
         <button id="joinBtn" class="big">ルームに参加<span>合言葉・QRコードで参加</span></button>
       </div>
@@ -59,13 +58,17 @@
     <div class="screen-title"><small>SECRET ENTRY</small><h2><span id="partyEntryNumber">1</span>番の登録</h2></div>
     <div class="card form-card secret-entry-card">
       <div class="privacy-banner">この画面は本人だけ見てください</div>
-      <label>馬の名前<input id="partyHorseName" maxlength="18" autocomplete="off" placeholder="好きな馬名"></label>
-      <label>騎手の名前<input id="partyJockeyName" maxlength="18" autocomplete="off" placeholder="好きな騎手名"></label>
+      <label>馬の決め方<select id="partyHorseSource"><option value="famous">有名馬から選ぶ</option><option value="custom">自分で名前を入力</option></select></label>
+      <label id="partyFamousHorseWrap">有名馬<select id="partyFamousHorse"></select></label>
+      <label id="partyCustomHorseWrap" hidden>馬の名前<input id="partyHorseName" maxlength="18" autocomplete="off" placeholder="好きな馬名"></label>
+      <label>騎手の決め方<select id="partyJockeySource"><option value="famous">有名騎手から選ぶ</option><option value="custom">自分で名前を入力</option></select></label>
+      <label id="partyFamousJockeyWrap">有名騎手<select id="partyFamousJockey"></select></label>
+      <label id="partyCustomJockeyWrap" hidden>騎手の名前<input id="partyJockeyName" maxlength="18" autocomplete="off" placeholder="好きな騎手名"></label>
       <label>脚質<select id="partyStyle"><option>逃げ</option><option selected>先行</option><option>差し</option><option>追込</option></select></label>
-      <label>馬タイプ<select id="partyHorseType"><option selected>バランス型</option><option>スピード型</option><option>スタミナ型</option><option>末脚型</option><option>スタート型</option><option>道悪型</option></select></label>
-      <p class="hint">全能力90から追加10ポイントを自由に配分できます。タイプを選ぶとおすすめ配分にもできます。</p>
-      <div class="ability-head"><div><b>能力ポイント</b><small>本人だけが見える秘密能力</small></div><strong>残り <span id="partyPointsLeft">10</span></strong></div>
-      <button id="partyRandomAbilityBtn" class="ghost compact">🎲 タイプに合わせておまかせ</button>
+      <label>馬タイプ<select id="partyHorseType"><option>バランス型</option><option>スピード型</option><option>スタミナ型</option><option>末脚型</option><option>スタート型</option><option>道悪型</option></select></label>
+      <p class="hint">有名馬を選ぶと、その馬らしい脚質と能力配分が自動で入ります。あとから自由に変更できます。</p>
+      <div class="ability-head"><div><b>能力ポイント</b><small>全能力90＋追加10ポイント</small></div><strong>残り <span id="partyPointsLeft">10</span></strong></div>
+      <button id="partyRandomAbilityBtn" class="ghost big">🎲 タイプに合わせておまかせ</button>
       <div id="partyAbilityEditor" class="ability-editor"></div>
       <button id="partyEntryDoneBtn" class="primary big">秘密で決定する</button>
       <p id="partyEntryError" class="error"></p>
@@ -82,6 +85,11 @@
     </div>
   </section>
 
+  <section id="partyReveal" class="screen">
+    <div class="screen-title center-title"><small>SECRET REVEAL</small><h2>出走馬を一斉公開！</h2><p id="partyRevealCountdown">まもなくゲートイン…</p></div>
+    <div id="partyRevealList" class="reveal-list"></div>
+  </section>
+
   <section id="horseCreate" class="screen">
     <div class="screen-title"><small>ORIGINAL HORSE</small><h2 id="createTitle">オリジナル馬を作る</h2></div>
     <div class="card form-card">
@@ -91,8 +99,7 @@
       <label>騎手タイプ<select id="customJockeyType"></select></label>
       <p class="hint">オンラインでは自分の馬と騎手の名前を自由に設定できます。騎手タイプの補正は全員同じ選択肢です。</p>
       <div class="ability-head"><div><b>能力ポイント</b><small>全能力90＋追加10ポイント</small></div><strong>残り <span id="pointsLeft">10</span></strong></div>
-      <button id="randomAbilityBtn" class="ghost compact">🎲 能力をおまかせ</button>
-      <div id="abilityEditor" class="ability-editor"></div>
+      <button id="randomAbilityBtn" class="ghost big">🎲 能力をおまかせ</button><div id="abilityEditor" class="ability-editor"></div>
       <button id="createNextBtn" class="primary big">次へ</button>
       <p id="createError" class="error"></p>
     </div>
@@ -120,17 +127,6 @@
       <label>ルーム名・合言葉<input id="joinCode" maxlength="12" autocapitalize="characters" placeholder="例：UMARIN"></label>
       <button id="joinRoomBtn" class="primary big">このルームに入る</button>
       <p id="joinError" class="error"></p>
-    </div>
-  </section>
-
-  <section id="soloSetup" class="screen">
-    <div class="screen-title"><small>SOLO RACE</small><h2>レース設定</h2></div>
-    <div class="card form-card grid2">
-      <label>競馬場<select id="soloVenue"></select></label>
-      <label>レース<select id="soloRace"></select></label>
-      <label>馬場<select id="soloGoing"><option>良</option><option>稍重</option><option>重</option><option>不良</option></select></label>
-      <label>出走頭数<select id="soloFieldSize"><option>8</option><option selected>10</option><option>12</option></select></label>
-      <button id="makeSoloBtn" class="primary big full">出走馬とオッズを見る</button>
     </div>
   </section>
 
@@ -172,8 +168,7 @@
     <div class="progress-caption"><span>START</span><b>レース進行</b><span>GOAL</span></div>
     <div id="progressTrack" class="progress-track"></div>
     <div id="whipPanel" class="whip-panel" hidden><div><b id="whipHorse">選んだ馬を追う！</b><small>残り約400mから連打可能。連打しすぎると効果が小さくなります。</small></div><button id="whipBtn" class="whip-btn">🏇 ムチ！<span id="whipCount">0回</span></button></div>
-    <div class="live-footer"><b id="clock">0:00.0</b></div>
-    <div id="leaderText" class="leader-banner">先頭：---</div>
+    <div class="live-footer"><b id="clock">0:00.0</b><span id="leaderText">先頭：---</span></div>
   </section>
 
   <section id="result" class="screen">
@@ -185,7 +180,7 @@
     <button id="resetWalletBtn" class="ghost big">ポイントを10,000に戻す</button>
   </section>
 </main>
-<footer>川上ウマウマレース v17 / 非公式ファンメイドゲーム</footer>
+<footer>川上ウマウマレース v19 / 非公式ファンメイドゲーム</footer>
 <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="app.js"></script>
