@@ -74,3 +74,38 @@
  .my-horse-banner{font-size:16px;grid-template-columns:minmax(0,max-content) 38px max-content minmax(0,1fr)}
  .my-horse-banner .my-horse-number{width:38px;height:38px}
 }
+
+
+/* v41: selected horse banner is visible before and during the fanfare, and stays readable */
+.my-horse-banner[hidden]{display:none!important}
+.my-horse-banner{
+  width:min(100%,760px);min-height:72px;margin-top:10px;padding:10px 14px;
+  display:grid;grid-template-columns:max-content 48px max-content minmax(0,1fr);
+  align-items:center;gap:8px;overflow:hidden;contain:layout paint;
+  border:1px solid rgba(255,255,255,.45);box-shadow:0 7px 20px rgba(0,0,0,.28);
+}
+.my-horse-banner .my-horse-label,
+.my-horse-banner .my-horse-suffix{
+  display:block;width:auto;height:auto;margin:0;border:0;border-radius:0;
+  white-space:nowrap;font-weight:900;line-height:1.2;
+}
+.my-horse-banner .my-horse-number{
+  display:grid;width:48px;height:48px;margin:0;border:3px solid #fff;border-radius:50%;
+  place-items:center;font-size:24px;font-weight:950;line-height:1;
+}
+.my-horse-banner .my-horse-name{
+  min-width:0;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:clamp(20px,4.4vw,30px);line-height:1.2;color:#221800;
+}
+@media(max-width:560px){
+ .my-horse-banner{grid-template-columns:max-content 44px max-content minmax(0,1fr);gap:6px;min-height:66px;padding:9px 11px;font-size:16px}
+ .my-horse-banner .my-horse-number{width:44px;height:44px;font-size:22px}
+ .my-horse-banner .my-horse-name{font-size:clamp(18px,5vw,24px)}
+}
+@media(max-width:390px){
+ .my-horse-banner{grid-template-columns:1fr 40px max-content;grid-template-areas:"label num suffix" "name name name";row-gap:4px}
+ .my-horse-banner .my-horse-label{grid-area:label}
+ .my-horse-banner .my-horse-number{grid-area:num;width:40px;height:40px;font-size:20px}
+ .my-horse-banner .my-horse-suffix{grid-area:suffix}
+ .my-horse-banner .my-horse-name{grid-area:name;white-space:normal;overflow-wrap:anywhere}
+}
