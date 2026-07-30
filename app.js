@@ -171,7 +171,7 @@ function fanfareTheme(name){
  return{label:'CHAMPIONSHIP BRASS FANFARE',tempo:140,key:57,phrase:[0,4,7,12,9,14,17,21,19,16,21,24,26,24]}
 }
 async function playOriginalFanfare(raceName){
- const th=fanfareTheme(raceName);$('fanfareLabel').textContent=th.label;
+ const th=fanfareTheme(raceName);const fanfareLabel=$('fanfareLabel');if(fanfareLabel)fanfareLabel.textContent=th.label;
  try{const ac=getAudioContext();if(!ac)return false;if(ac.state==='suspended'){try{await ac.resume()}catch(e){return false}}if(ac.state!=='running')return false;
  const beat=60/th.tempo,t0=ac.currentTime+.08,dur=th.phrase.length*beat;
  const master=ac.createGain(),comp=ac.createDynamicsCompressor(),reverb=ac.createConvolver();
@@ -206,31 +206,34 @@ function drawPreRaceGate(ctx,runners,open=0){
 }
 async function startCountdown(payload){
  const token=++state.navToken;state.racePayload=payload;state.seed=payload.seed;state.field=payload.field;Object.assign(state,payload.config||{});show('race');
- $('liveTitle').textContent=state.race.name;$('liveCond').textContent=conditionText();$('remaining').textContent=`${state.race.distance}m`;$('commentary').textContent='全馬ゲートイン。ファンファーレを開始します。';$('leaderText').innerHTML='<span>全馬ゲート内で待機中</span>';$('clock').textContent='0:00.0';$('whipPanel').hidden=true;
+ $('liveTitle').textContent=state.race.name;$('liveCond').textContent=conditionText();$('remaining').textContent=`${state.race.distance}m`;$('commentary').textContent='全馬ゲートイン。ファンファーレ演奏を開始します。';$('leaderText').innerHTML='<span>全馬ゲート内で待機中</span>';$('clock').textContent='0:00.0';$('whipPanel').hidden=true;
  const canvas=$('track'),ctx=canvas.getContext('2d');resizeCanvas(canvas);const preview=payload.field.map((h,i)=>({...h,display:0,lane:i}));drawPreRaceGate(ctx,preview,0);
- await new Promise(r=>setTimeout(r,180));if(token!==state.navToken)return;
- let audioReady=await unlockAudio();
- if(!audioReady){
-   $('commentary').textContent='全馬ゲートイン。音声を有効にしてファンファーレを開始してください。';
-   $('leaderText').innerHTML='<button id="raceAudioStart" class="race-audio-start">🔊 ファンファーレを鳴らす</button>';
-   await new Promise(resolve=>{const b=$('raceAudioStart');if(!b){resolve();return}b.onclick=async()=>{audioReady=await unlockAudio();if(audioReady)resolve();else{$('commentary').textContent='音声を再生できませんでした。消音モードを解除してもう一度押してください。'}}});
-   if(token!==state.navToken)return;
- }
+
+ // iPhoneではユーザー操作時に一度有効化したAudioContextを再開して使う。
+ // 音声側で例外が起きても発走処理は必ず継続する。
  let played=false;
- while(!played&&token===state.navToken){
-   $('leaderText').innerHTML='<span>ファンファーレ演奏中</span>';
-   $('commentary').textContent='全馬ゲートイン。ファンファーレ演奏中です。';
-   played=await playRaceFanfare(state.race.name);
+ try{
+   await unlockAudio();
    if(token!==state.navToken)return;
-   if(!played){
-     $('commentary').textContent='ファンファーレを再生できませんでした。音量・消音設定を確認してください。';
-     $('leaderText').innerHTML='<button id="raceAudioRetry" class="race-audio-start">🔊 もう一度鳴らす</button>';
-     await new Promise(resolve=>{const b=$('raceAudioRetry');if(!b){resolve();return}b.onclick=async()=>{await unlockAudio();resolve()}});
-   }
+   $('leaderText').innerHTML='<span>🎺 ファンファーレ演奏中</span>';
+   $('commentary').textContent='全馬ゲートイン。ファンファーレ演奏中です。';
+   played=await Promise.race([
+     playRaceFanfare(state.race.name),
+     new Promise(resolve=>setTimeout(()=>resolve(false),8500))
+   ]);
+ }catch(e){console.warn('race fanfare error',e)}
+ if(token!==state.navToken)return;
+
+ // 音声が使えない端末でもゲームを止めない。演奏時間相当を確保してから発走する。
+ if(!played){
+   $('commentary').textContent='ファンファーレ演奏を終え、まもなく発走します。';
+   $('leaderText').innerHTML='<span>発走準備完了</span>';
+   await new Promise(r=>setTimeout(r,1300));
  }
- $('commentary').textContent='ゲートオープン！ 各馬一斉にスタート！';
- try{await unlockAudio();playGateBang()}catch(e){}
- const gate=$('startingGate');if(gate)gate.classList.add('open');
+ if(token!==state.navToken)return;
+ $('commentary').textContent='パンッ！ ゲートオープン！ 各馬一斉にスタート！';
+ $('leaderText').innerHTML='<span>スタート！</span>';
+ try{await unlockAudio();playGateBang()}catch(e){console.warn('gate sound error',e)}
  const begin=performance.now();
  function openFrame(ts){if(token!==state.navToken)return;const p=Math.min(1,(ts-begin)/620);drawPreRaceGate(ctx,preview,1-Math.pow(1-p,3));if(p<1)requestAnimationFrame(openFrame);else setTimeout(()=>{if(token===state.navToken)runRace(payload,token)},110)}
  requestAnimationFrame(openFrame)
