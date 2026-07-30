@@ -1,4 +1,4 @@
-// v46: reliable WAV fanfare + gate bang, no whip
+// v47: iPhone smooth race engine + reliable WAV audio, no whip
 'use strict';
 const $=id=>document.getElementById(id);
 const ABILITIES=['speed','stamina','kick','start','mud'];
@@ -267,11 +267,11 @@ function getRaceBackground(canvas,runners){
  c.fillStyle='#103d22';c.fillRect(0,h*.95,w,h*.05);c.fillStyle='#fff';c.font=`700 ${Math.max(16,w*.018)}px sans-serif`;c.fillText('START',start-30,h*.44);c.fillText('GOAL',goal-28,h*.44);
  canvas._raceBg={key,canvas:bg};return bg
 }
-function drawRaceScene(ctx,runners,{gateOpen=0,showGate=false,animTime=performance.now()}={}){
+function drawRaceScene(ctx,runners,{gateOpen=0,showGate=false,animTime=performance.now(),mobile=matchMedia('(max-width: 700px)').matches}={}){
  const w=ctx.canvas.width,h=ctx.canvas.height;ctx.clearRect(0,0,w,h);ctx.drawImage(getRaceBackground(ctx.canvas,runners),0,0);
  const start=w*.10,goal=w*.93,trackW=goal-start,horseScale=Math.max(.75,Math.min(1.25,w/1050));
  const gateHorseX=start-(38*horseScale);
- runners.forEach((r,i)=>{const lane=Number.isFinite(r.lane)?r.lane:i;const laneY=h*.48+(lane+.5)*(h*.47/runners.length);const x=gateHorseX+trackW*Math.max(0,r.display||0);drawHorse(ctx,x,laneY,r,lane,animTime)});
+ runners.forEach((r,i)=>{const lane=Number.isFinite(r.lane)?r.lane:i;const laneY=h*.48+(lane+.5)*(h*.47/runners.length);const x=gateHorseX+trackW*Math.max(0,r.display||0);drawHorse(ctx,x,laneY,r,lane,animTime,mobile)});
  if(showGate){
    const stallW=Math.max(28,w*.048),gateX=gateHorseX-stallW*.28,gateTop=h*.46,gateBottom=h*.95;
    ctx.fillStyle='#c7d0ca';ctx.fillRect(gateX-stallW*.55,gateTop,stallW*1.18,gateBottom-gateTop);ctx.strokeStyle='#eef4f0';ctx.lineWidth=3;ctx.strokeRect(gateX-stallW*.55,gateTop,stallW*1.18,gateBottom-gateTop);
@@ -284,7 +284,7 @@ function drawPreRaceGate(ctx,runners,open=0){drawRaceScene(ctx,runners,{gateOpen
 async function startCountdown(payload){
  const token=++state.navToken;state.racePayload=payload;state.seed=payload.seed;state.field=payload.field;Object.assign(state,payload.config||{});if(payload.playerAssignments){state.playerAssignments=payload.playerAssignments;state.myRunnerNumber=payload.playerAssignments[state.player?.id]??state.myRunnerNumber}const payloadBet=payload.betSelections?.[state.player?.id]||payload.localBet;if(payloadBet&&Number.isFinite(Number(payloadBet.number))){const h=state.field.find(x=>Number(x.number)===Number(payloadBet.number));state.confirmedBet={number:Number(payloadBet.number),betType:payloadBet.betType||state.betType,stake:Number(payloadBet.stake)||state.stake,name:h?.name||'',seed:payload.seed};state.selection=state.confirmedBet.number;state.betType=state.confirmedBet.betType;state.stake=state.confirmedBet.stake}show('race');
  $('liveTitle').textContent=state.race.name;$('liveCond').textContent=conditionText();$('remaining').textContent=`${state.race.distance}m`;$('commentary').textContent='全馬ゲートイン。ファンファーレ演奏を開始します。';$('leaderText').innerHTML='<span>全馬ゲート内で待機中</span>';$('clock').textContent='0:00.0';
- const canvas=$('track'),ctx=canvas.getContext('2d');resizeCanvas(canvas);const preview=payload.field.map((h,i)=>({...h,display:0,lane:i}));
+ const canvas=$('track'),ctx=canvas.getContext('2d',{alpha:false,desynchronized:true});resizeCanvas(canvas);const preview=payload.field.map((h,i)=>({...h,display:0,lane:i}));
  const previewChosen=renderMyHorseBanner(preview);if(previewChosen)previewChosen.isSelected=true;
  let previewActive=true;
  const drawPreview=()=>{if(!previewActive||token!==state.navToken)return;drawPreRaceGate(ctx,preview,0);requestAnimationFrame(drawPreview)};
@@ -296,7 +296,7 @@ async function startCountdown(payload){
  if(token!==state.navToken)return;
  $('commentary').textContent='パンッ！ ゲートオープン！';$('leaderText').innerHTML='<span>スタート！</span>';
  try{await unlockAudio();await playGateBang()}catch(e){console.warn('gate sound error',e)}
- previewActive=false;raceRedraw=null;runRace(payload,token)
+ previewActive=false;raceRedraw=null;if(audioKeepAlive){try{audioKeepAlive.keep.stop()}catch(e){}audioKeepAlive=null}runRace(payload,token)
 }
 function officialPlan(field,seed){
  const rnd=seeded(seed^0x9e3779b9);
@@ -437,8 +437,8 @@ function renderMyHorseBanner(runners){
  return chosen
 }
 function runRace(payload,token=state.navToken){
- const canvas=$('track'),ctx=canvas.getContext('2d');resizeCanvas(canvas);
- const plan=officialPlan(payload.field,payload.seed),rnd=seeded(payload.seed^0x51f15e);
+ const canvas=$('track'),ctx=canvas.getContext('2d',{alpha:false,desynchronized:true});resizeCanvas(canvas);
+ const plan=officialPlan(payload.field,payload.seed);
  const laneByNumber=new Map(payload.field.map((h,i)=>[h.number,i]));
  const runners=plan.map((h,i)=>({...h,display:0,finish:false,lane:laneByNumber.get(h.number)??h.gateIndex??i,actualFinish:null,lastDisplay:0,visualSpeed:1/RACE_DURATION}));
  buildRaceTimeline(runners,payload.seed,state.race.distance);
@@ -446,60 +446,49 @@ function runRace(payload,token=state.navToken){
  const dots=makeProgress(runners);$('liveTitle').textContent=state.race.name;$('liveCond').textContent=conditionText();
  const chosen=renderMyHorseBanner(runners);if(chosen)chosen.isSelected=true;
  raceRedraw=()=>drawRaceScene(ctx,runners,{showGate:false});
- 
  const lastFinish=Math.max(...runners.map(r=>r.finishWall));
- let sequenceStart=null,raceStart=null,lastFrame=null,lastCall=-1,done=false,lastLeader=null,lastUi=0,lastProgress=0,lastLeaderText='';
- function frame(ts){
-  if(token!==state.navToken)return;
-  if(sequenceStart===null)sequenceStart=ts;
-  const sequence=(ts-sequenceStart)/1000;
-  const gateOpen=Math.min(1,sequence/.55),launch=Math.max(0,Math.min(1,(sequence-.55)/.90));
-  if(sequence<1.45){
-   const eased=launch*launch*(3-2*launch);
-   runners.forEach(h=>h.display=.0035*eased);
-   drawRaceScene(ctx,runners,{gateOpen,showGate:true,animTime:ts});if(ts-lastProgress>66){updateProgress(dots,runners);lastProgress=ts}if(ts-lastUi>120){$('remaining').textContent=`${state.race.distance}m`;lastUi=ts}requestAnimationFrame(frame);return
-  }
-  if(raceStart===null){raceStart=ts;lastFrame=ts;$('commentary').textContent='スタート！ 全馬が滑らかに加速していきます。'}
-  const wall=(ts-raceStart)/1000;state.raceRuntime.wall=wall;
-  const dt=Math.min(.05,Math.max(.001,(ts-lastFrame)/1000));lastFrame=ts;
-  runners.forEach(h=>{
-   const sampled=sampleTimeline(h,wall);
-   const ahead=sampleTimeline(h,wall+.14);
-   // 目標曲線の傾きから速度を作り、加減速を滑らかにする。全馬の最低速度を保証。
-   const curveSpeed=Math.max(.016,(ahead-sampled)/.14);
-   const chase=(sampled-h.display)*1.9;
-   const desired=Math.max(.016,Math.min(.090,curveSpeed+chase));
-   const accel=desired>h.visualSpeed?3.8:2.6;
+ const mobile=matchMedia('(max-width: 700px)').matches;
+ const renderInterval=1000/(mobile?45:60); // 安定したフレーム間隔を優先
+ const physicsStep=1/60;
+ const order=runners.slice();
+ let sequenceStart=null,raceStart=null,lastFrame=null,lastRender=0,accumulator=0,done=false,lastLeader=null,lastUi=0,lastProgress=0,lastOrderUpdate=0,lastCall=-1,lastLeaderText='';
+ function updatePhysics(wall,dt){
+  for(let i=0;i<runners.length;i++){
+   const h=runners[i],sampled=sampleTimeline(h,wall),ahead=sampleTimeline(h,wall+.14);
+   const curveSpeed=Math.max(.016,(ahead-sampled)/.14),chase=(sampled-h.display)*1.9;
+   const desired=Math.max(.016,Math.min(.090,curveSpeed+chase)),accel=desired>h.visualSpeed?3.8:2.6;
    h.visualSpeed+=(desired-h.visualSpeed)*Math.min(1,accel*dt);
-   h.visualSpeed=Math.max(.016,Math.min(.090,h.visualSpeed));
-   h.lastDisplay=h.display;
-   h.display+=h.visualSpeed*dt;
-   // 目標より大幅に遅れた時だけ、見えない程度に追従させる。瞬間移動はさせない。
+   h.visualSpeed=Math.max(.016,Math.min(.090,h.visualSpeed));h.lastDisplay=h.display;h.display+=h.visualSpeed*dt;
    if(sampled-h.display>.025)h.display+=Math.min(.004,(sampled-h.display)*.08);
    if(!h.finish&&h.display>=1){h.finish=true;h.actualFinish=wall;h.display=Math.max(1,h.display)}
-  });
-  drawRaceScene(ctx,runners,{showGate:false,animTime:ts});if(ts-lastProgress>50){updateProgress(dots,runners);lastProgress=ts}
-  const order=[...runners].sort((a,b)=>b.display-a.display||a.finishWall-b.finishWall),lead=order[0],control=controlledRunner(runners);
-  if(ts-lastUi>100){
-   $('clock').textContent=`0:${Math.min(59.9,wall).toFixed(1).padStart(4,'0')}`;
-   $('remaining').textContent=`${Math.max(0,Math.round(state.race.distance*(1-Math.min(1,lead.display))))}m`;
-   const leaderText=`${lead.number}:${lead.name}`;if(leaderText!==lastLeaderText){const leaderColor=COLORS[(lead.number-1)%COLORS.length];$('leaderText').innerHTML=`<span class="leader-num" style="background:${leaderColor};color:${lead.number===2?'#fff':'#111'}">${lead.number}</span><span>先頭 ${escapeHtml(lead.name)}</span>`;lastLeaderText=leaderText}
-   lastUi=ts
   }
-  const call=Math.floor(wall/2.8);
-  const remaining=Math.max(0,state.race.distance*(1-Math.min(1,lead.display)));
-  const leaderChanged=lastLeader!==null&&lastLeader!==lead.number;lastLeader=lead.number;
-  if(call!==lastCall||leaderChanged){
-   lastCall=call;
-   if(remaining<=55)$('commentary').textContent=`ゴール目前！ ${order[0].number}番と${order[1]?.number||order[0].number}番が僅差、わずかに${order[0].number}番が前！`;
-   else if(remaining<=300)$('commentary').textContent=`残り300m！ ${order[0].name}、${order[1]?.name||''}、${order[2]?.name||''}が走りながら激しく抜きつ抜かれつ！`;
-   else if(remaining<=700)$('commentary').textContent=`残り700m！ 馬群が徐々に詰まり、${lead.name}を各馬が追う！`;
-   else if(leaderChanged)$('commentary').textContent=`${lead.number}番${lead.name}が前へ！ 先頭が入れ替わった！`;
-   else $('commentary').textContent=commentary(call,order)
+ }
+ function frame(ts){
+  if(token!==state.navToken)return;
+  if(sequenceStart===null){sequenceStart=ts;lastFrame=ts;lastRender=ts-renderInterval}
+  const rawDt=Math.min(.08,Math.max(0,(ts-lastFrame)/1000));lastFrame=ts;
+  const sequence=(ts-sequenceStart)/1000,gateOpen=Math.min(1,sequence/.55),launch=Math.max(0,Math.min(1,(sequence-.55)/.90));
+  if(sequence<1.45){
+   const eased=launch*launch*(3-2*launch);for(let i=0;i<runners.length;i++)runners[i].display=.0035*eased;
+   if(ts-lastRender>=renderInterval){drawRaceScene(ctx,runners,{gateOpen,showGate:true,animTime:ts,mobile});lastRender=ts}
+   if(ts-lastProgress>100){updateProgress(dots,runners);lastProgress=ts}if(ts-lastUi>200){$('remaining').textContent=`${state.race.distance}m`;lastUi=ts}
+   requestAnimationFrame(frame);return
   }
-  if(runners.every(h=>h.finish)||wall>lastFinish+1){
-   if(!done){done=true;const sorted=[...runners].sort((a,b)=>(a.actualFinish??a.finishWall)-(b.actualFinish??b.finishWall)||a.number-b.number);const base=estimateSeconds(state.race.distance),first=(sorted[0].actualFinish??sorted[0].finishWall);state.result=sorted.map(h=>({...h,officialTime:base+((h.actualFinish??h.finishWall)-first)}));state.raceRuntime=null;raceRedraw=null;setTimeout(showResult,900)}return
+  if(raceStart===null){raceStart=ts;lastFrame=ts;accumulator=0;$('commentary').textContent='スタート！ 全馬が滑らかに加速していきます。'}
+  const wall=(ts-raceStart)/1000;state.raceRuntime.wall=wall;accumulator+=rawDt;
+  let steps=0;while(accumulator>=physicsStep&&steps<5){updatePhysics(wall-accumulator+physicsStep,physicsStep);accumulator-=physicsStep;steps++}
+  if(ts-lastRender>=renderInterval){drawRaceScene(ctx,runners,{showGate:false,animTime:ts,mobile});lastRender=ts}
+  if(ts-lastProgress>100){updateProgress(dots,runners);lastProgress=ts}
+  if(ts-lastOrderUpdate>125){order.sort((a,b)=>b.display-a.display||a.finishWall-b.finishWall);lastOrderUpdate=ts}
+  const lead=order[0],control=controlledRunner(runners);
+  if(ts-lastUi>150){
+   $('clock').textContent=`0:${Math.min(59.9,wall).toFixed(1).padStart(4,'0')}`;$('remaining').textContent=`${Math.max(0,Math.round(state.race.distance*(1-Math.min(1,lead.display))))}m`;
+   const leaderText=`${lead.number}:${lead.name}`;if(leaderText!==lastLeaderText){const leaderColor=COLORS[(lead.number-1)%COLORS.length];$('leaderText').innerHTML=`<span class="leader-num" style="background:${leaderColor};color:${lead.number===2?'#fff':'#111'}">${lead.number}</span><span>先頭 ${escapeHtml(lead.name)}</span>`;lastLeaderText=leaderText}lastUi=ts
   }
+  const call=Math.floor(wall/2.8),remaining=Math.max(0,state.race.distance*(1-Math.min(1,lead.display))),leaderChanged=lastLeader!==null&&lastLeader!==lead.number;lastLeader=lead.number;
+  if(call!==lastCall||leaderChanged){lastCall=call;if(remaining<=55)$('commentary').textContent=`ゴール目前！ ${order[0].number}番と${order[1]?.number||order[0].number}番が僅差、わずかに${order[0].number}番が前！`;else if(remaining<=300)$('commentary').textContent=`残り300m！ ${order[0].name}、${order[1]?.name||''}、${order[2]?.name||''}が走りながら激しく抜きつ抜かれつ！`;else if(remaining<=700)$('commentary').textContent=`残り700m！ 馬群が徐々に詰まり、${lead.name}を各馬が追う！`;else if(leaderChanged)$('commentary').textContent=`${lead.number}番${lead.name}が前へ！ 先頭が入れ替わった！`;else $('commentary').textContent=commentary(call,order)}
+  let allFinished=true;for(let i=0;i<runners.length;i++){if(!runners[i].finish){allFinished=false;break}}
+  if(allFinished||wall>lastFinish+1){if(!done){done=true;order.sort((a,b)=>(a.actualFinish??a.finishWall)-(b.actualFinish??b.finishWall)||a.number-b.number);const base=estimateSeconds(state.race.distance),first=(order[0].actualFinish??order[0].finishWall);state.result=order.map(h=>({...h,officialTime:base+((h.actualFinish??h.finishWall)-first)}));state.raceRuntime=null;raceRedraw=null;setTimeout(showResult,900)}return}
   requestAnimationFrame(frame)
  }
  requestAnimationFrame(frame)
@@ -520,11 +509,11 @@ function raceDramaOffset(r,t){
  const fade=r.fadePower*smooth((t-r.fadeAt)/Math.max(.08,1-r.fadeAt));
  return phase1+surge1+surge2-fade
 }
-function resizeCanvas(canvas){const rect=canvas.getBoundingClientRect(),mobile=matchMedia('(max-width: 700px)').matches,dpr=Math.min(mobile?1.35:1.75,devicePixelRatio||1),w=Math.max(640,Math.round(rect.width*dpr)),h=Math.max(420,Math.round(rect.height*dpr));if(canvas.width===w&&canvas.height===h)return false;canvas.width=w;canvas.height=h;canvas._raceBg=null;return true}
+function resizeCanvas(canvas){const rect=canvas.getBoundingClientRect(),mobile=matchMedia('(max-width: 700px)').matches,dpr=Math.min(mobile?1.0:1.5,devicePixelRatio||1),w=Math.max(mobile?520:640,Math.round(rect.width*dpr)),h=Math.max(mobile?350:420,Math.round(rect.height*dpr));if(canvas.width===w&&canvas.height===h)return false;canvas.width=w;canvas.height=h;canvas._raceBg=null;canvas._horseSprites=null;return true}
 function drawTrack(ctx,runners){const w=ctx.canvas.width,h=ctx.canvas.height;ctx.clearRect(0,0,w,h);const sky=ctx.createLinearGradient(0,0,0,h*.45);sky.addColorStop(0,'#82c9ff');sky.addColorStop(1,'#e8f5ff');ctx.fillStyle=sky;ctx.fillRect(0,0,w,h*.35);ctx.fillStyle='#1f7c42';ctx.fillRect(0,h*.35,w,h*.65);ctx.fillStyle='#c69a61';ctx.fillRect(0,h*.48,w,h*.47);for(let i=0;i<=runners.length;i++){const y=h*.48+i*(h*.47/runners.length);ctx.strokeStyle='#ffffff88';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}const start=w*.07,goal=w*.93;ctx.fillStyle='#ffe34f';ctx.fillRect(start-5,h*.42,10,h*.55);for(let y=h*.42;y<h*.97;y+=20){ctx.fillStyle=((y/20)|0)%2?'#fff':'#111';ctx.fillRect(goal-7,y,14,20)}runners.forEach((r,i)=>{const lane=Number.isFinite(r.lane)?r.lane:i;const laneY=h*.48+(lane+.5)*(h*.47/runners.length),x=start+(goal-start)*r.display;drawHorse(ctx,x,laneY,r,lane)});ctx.fillStyle='#103d22';ctx.fillRect(0,h*.95,w,h*.05);ctx.fillStyle='#fff';ctx.font=`700 ${Math.max(16,w*.018)}px sans-serif`;ctx.fillText('START',start-30,h*.44);ctx.fillText('GOAL',goal-28,h*.44)}
-function drawHorse(ctx,x,y,r,i,animTime=performance.now()){const scale=Math.max(.75,Math.min(1.25,ctx.canvas.width/1050));ctx.save();ctx.translate(x,y);if(r.isSelected){ctx.save();ctx.strokeStyle='#ffe45b';ctx.shadowColor='#ffe45b';ctx.shadowBlur=14*scale;ctx.lineWidth=4*scale;ctx.beginPath();ctx.ellipse(0,-3*scale,40*scale,30*scale,0,0,Math.PI*2);ctx.stroke();ctx.restore()}ctx.fillStyle='#4b2c18';ctx.beginPath();ctx.ellipse(0,0,25*scale,12*scale,0,0,Math.PI*2);ctx.fill();ctx.fillRect(13*scale,-9*scale,17*scale,8*scale);ctx.beginPath();ctx.arc(29*scale,-9*scale,7*scale,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#2f1b10';ctx.lineWidth=4*scale;const phase=animTime/80+i;for(const dx of [-13,10]){ctx.beginPath();ctx.moveTo(dx*scale,8*scale);ctx.lineTo((dx+Math.sin(phase)*8)*scale,24*scale);ctx.stroke()}ctx.fillStyle=COLORS[(r.number-1)%COLORS.length];ctx.beginPath();ctx.arc(-1*scale,-15*scale,10*scale,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle=r.number===2?'#fff':'#111';ctx.font=`900 ${12*scale}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(r.number,-1*scale,-15*scale);ctx.restore()}
-function makeProgress(runners){const box=$('progressTrack');box.innerHTML='';const map=new Map();runners.forEach((r,i)=>{const d=document.createElement('div');d.className='progress-dot';d.textContent=r.number;d.style.background=COLORS[(r.number-1)%COLORS.length];d.style.color=r.number===2?'white':'#111';const lane=Number.isFinite(r.lane)?r.lane:i;d.style.top=`${12+(lane/(runners.length-1||1))*76}%`;box.appendChild(d);map.set(r.number,d)});updateProgress(map,runners);return map}
-function updateProgress(map,runners){runners.forEach(r=>{const el=map.get(r.number);if(el)el.style.left=`${7+r.display*86}%`})}
+function drawHorse(ctx,x,y,r,i,animTime=performance.now(),mobile=false){const scale=Math.max(.75,Math.min(1.25,ctx.canvas.width/1050));ctx.save();ctx.translate(x,y);if(r.isSelected){ctx.save();ctx.strokeStyle='#ffe45b';if(!mobile){ctx.shadowColor='#ffe45b';ctx.shadowBlur=10*scale}ctx.lineWidth=(mobile?3:4)*scale;ctx.beginPath();ctx.ellipse(0,-3*scale,40*scale,30*scale,0,0,Math.PI*2);ctx.stroke();ctx.restore()}ctx.fillStyle='#4b2c18';ctx.beginPath();ctx.ellipse(0,0,25*scale,12*scale,0,0,Math.PI*2);ctx.fill();ctx.fillRect(13*scale,-9*scale,17*scale,8*scale);ctx.beginPath();ctx.arc(29*scale,-9*scale,7*scale,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#2f1b10';ctx.lineWidth=4*scale;const phase=animTime/80+i;for(const dx of [-13,10]){ctx.beginPath();ctx.moveTo(dx*scale,8*scale);ctx.lineTo((dx+Math.sin(phase)*8)*scale,24*scale);ctx.stroke()}ctx.fillStyle=COLORS[(r.number-1)%COLORS.length];ctx.beginPath();ctx.arc(-1*scale,-15*scale,10*scale,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle=r.number===2?'#fff':'#111';ctx.font=`900 ${12*scale}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(r.number,-1*scale,-15*scale);ctx.restore()}
+function makeProgress(runners){const box=$('progressTrack');box.innerHTML='';const map=new Map();runners.forEach((r,i)=>{const d=document.createElement('div');d.className='progress-dot';d.textContent=r.number;d.style.background=COLORS[(r.number-1)%COLORS.length];d.style.color=r.number===2?'white':'#111';const lane=Number.isFinite(r.lane)?r.lane:i;d.style.top=`${12+(lane/(runners.length-1||1))*76}%`;d.style.left='7%';d.style.willChange='transform';box.appendChild(d);map.set(r.number,d)});updateProgress(map,runners);return map}
+function updateProgress(map,runners){runners.forEach(r=>{const el=map.get(r.number);if(el)el.style.transform=`translate3d(${r.display*86}%,0,0)`})}
 function commentary(c,o){const a=o[0],b=o[1]||o[0],c3=o[2]||b;const esc=o.find(x=>x.style==='逃げ'),front=o.find(x=>x.style==='先行'),closer=[...o].reverse().find(x=>x.style==='追込')||o.find(x=>x.style==='差し');return [
 `スタート！ ${esc?`${esc.number}番${esc.name}がロケットスタート！ 一気に先頭へ！`:`${a.number}番${a.name}が好発！`}`,
 `${esc?`${esc.name}が大逃げ！ 後続を何馬身も引き離した！`:`${a.name}が先頭、${front?.name||b.name}が好位！`}`,
