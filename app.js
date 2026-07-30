@@ -137,7 +137,7 @@ function joinRoom(){
    state.peer.on('open',()=>{
     const conn=state.peer.connect(target,{reliable:true,serialization:'json'});state.hostConn=conn;
     const timer=setTimeout(()=>{if(!connected){try{conn.close()}catch(e){};setTimeout(connect,700)}},9000);
-    conn.on('open',()=>{connected=true;clearTimeout(timer);$('lobbyStatus').textContent='接続しました。参加情報を送信しています…';conn.on('data',joinReceive);conn.on('close',()=>{$('lobbyStatus').textContent='主催者との接続が切れました。'});conn.on('error',()=>{$('lobbyStatus').textContent='通信中にエラーが発生しました。'});conn.send({type:'join',player:state.player,invite:code,clientVersion:25})});
+    conn.on('open',()=>{connected=true;clearTimeout(timer);$('lobbyStatus').textContent='接続しました。参加情報を送信しています…';conn.on('data',joinReceive);conn.on('close',()=>{$('lobbyStatus').textContent='主催者との接続が切れました。'});conn.on('error',()=>{$('lobbyStatus').textContent='通信中にエラーが発生しました。'});conn.send({type:'join',player:state.player,invite:code,clientVersion:27})});
     conn.on('error',()=>{clearTimeout(timer);if(!connected)setTimeout(connect,700)});
    });
    state.peer.on('error',e=>{if(!connected&&attempt<3)setTimeout(connect,700);else $('lobbyStatus').textContent=`参加できませんでした（${e.type||'通信エラー'}）。主催者がロビーを開いたままか確認してな。`});
@@ -159,7 +159,8 @@ function prepareOnlineRace(){const payload={seed:state.seed,field:state.field,st
 function leaveRoom(){if(state.isHost)broadcast({type:'roomClosed'});cleanupPeer();state.members.clear();state.roomCode='';state.hostPeerId='';state.isHost=false;show('home')}
 function cleanupPeer(){try{if(state.hostConn)state.hostConn.close();state.connections.forEach(c=>c.close());if(state.peer)state.peer.destroy()}catch(e){}state.peer=null;state.hostConn=null;state.connections=new Map()}
 let audioContext=null;
-function getAudioContext(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;if(!audioContext)audioContext=new C();if(audioContext.state==='suspended')audioContext.resume().catch(()=>{});return audioContext}catch(e){return null}}
+function getAudioContext(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;if(!audioContext)audioContext=new C();return audioContext}catch(e){return null}}
+async function unlockAudio(){try{const ac=getAudioContext();if(!ac)return false;if(ac.state==='suspended')await ac.resume();const o=ac.createOscillator(),g=ac.createGain();g.gain.value=.00001;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+.02);return ac.state==='running'}catch(e){return false}}
 function fanfareTheme(name){
  const east=['日本ダービー','皐月賞','天皇賞（秋）','ジャパンカップ','安田記念','NHKマイルC'];
  const west=['宝塚記念','大阪杯','桜花賞','菊花賞','天皇賞（春）'];
@@ -169,8 +170,9 @@ function fanfareTheme(name){
  if(east.includes(name))return{label:'EAST G1 BRASS FANFARE',tempo:144,key:58,phrase:[0,4,7,12,11,14,19,16,19,23,21,24,28,24]};
  return{label:'CHAMPIONSHIP BRASS FANFARE',tempo:140,key:57,phrase:[0,4,7,12,9,14,17,21,19,16,21,24,26,24]}
 }
-function playOriginalFanfare(raceName){
- const ac=getAudioContext(),th=fanfareTheme(raceName);$('fanfareLabel').textContent=th.label;if(!ac)return Promise.resolve();
+async function playOriginalFanfare(raceName){
+ const th=fanfareTheme(raceName);$('fanfareLabel').textContent=th.label;
+ try{const ac=getAudioContext();if(!ac)return false;if(ac.state==='suspended'){try{await ac.resume()}catch(e){return false}}if(ac.state!=='running')return false;
  const beat=60/th.tempo,t0=ac.currentTime+.08,dur=th.phrase.length*beat;
  const master=ac.createGain(),comp=ac.createDynamicsCompressor(),reverb=ac.createConvolver();
  const ir=ac.createBuffer(2,ac.sampleRate*.95,ac.sampleRate);for(let c=0;c<2;c++){const d=ir.getChannelData(c);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2.8)}reverb.buffer=ir;
@@ -180,11 +182,12 @@ function playOriginalFanfare(raceName){
  const timp=(start,strong=false)=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.setValueAtTime(strong?105:125,start);o.frequency.exponentialRampToValueAtTime(58,start+.18);g.gain.setValueAtTime(.0001,start);g.gain.exponentialRampToValueAtTime(strong?.22:.10,start+.008);g.gain.exponentialRampToValueAtTime(.0001,start+.42);o.connect(g);g.connect(master);o.start(start);o.stop(start+.45)};
  th.phrase.forEach((n,i)=>{const st=t0+i*beat,len=beat*(i===th.phrase.length-1?2.1:.92);horn(th.key+n,st,len,.095,i%4===3?1.4:1);if(i%2===0)horn(th.key+n-12,st,len*1.08,.034,.5);if(i%4===0)timp(st,true);else if(i%2===0)timp(st,false)});
  [0,4,8,12].forEach(i=>{if(i>=th.phrase.length)return;const st=t0+i*beat;[th.key-12,th.key-5,th.key].forEach((m,j)=>horn(m,st,beat*3.3,.025/(j+1),.25))});
- return new Promise(r=>setTimeout(r,(dur+.7)*1000))
+ await new Promise(r=>setTimeout(r,Math.min(7200,(dur+.7)*1000)));return true
+ }catch(e){console.warn('fanfare failed',e);return false}
 }
 function renderStartingGate(field){const gate=$('startingGate');gate.classList.remove('open');gate.innerHTML=field.map(h=>`<div class="gate-stall"><span class="gate-num" style="background:${COLORS[(h.number-1)%COLORS.length]};color:${h.number===2?'#fff':'#111'}">${h.number}</span><div class="gate-horse">🐎</div><i></i></div>`).join('')}
 
-async function playRaceFanfare(raceName){await playOriginalFanfare(raceName)}
+async function playRaceFanfare(raceName){try{return await playOriginalFanfare(raceName)}catch(e){console.warn(e);return false}}
 
 function playGateBang(){
  const ac=getAudioContext();if(!ac)return;
@@ -204,10 +207,18 @@ function drawPreRaceGate(ctx,runners,open=0){
 async function startCountdown(payload){
  const token=++state.navToken;state.racePayload=payload;state.seed=payload.seed;state.field=payload.field;Object.assign(state,payload.config||{});show('race');
  $('liveTitle').textContent=state.race.name;$('liveCond').textContent=conditionText();$('remaining').textContent=`${state.race.distance}m`;$('commentary').textContent='全馬ゲートイン。ファンファーレ演奏中。';$('leaderText').innerHTML='<span>発走をお待ちください</span>';$('clock').textContent='0:00.0';$('whipPanel').hidden=true;
- const canvas=$('track'),ctx=canvas.getContext('2d');resizeCanvas(canvas);const preview=payload.field.map((h,i)=>({...h,display:0,lane:i}));drawPreRaceGate(ctx,preview,0);getAudioContext();
- await new Promise(r=>setTimeout(r,350));if(token!==state.navToken)return;await playRaceFanfare(state.race.name);if(token!==state.navToken)return;
- $('commentary').textContent='スタートしました！';playGateBang();const begin=performance.now();
- function openFrame(ts){if(token!==state.navToken)return;const p=Math.min(1,(ts-begin)/520);drawPreRaceGate(ctx,preview,1-Math.pow(1-p,3));if(p<1)requestAnimationFrame(openFrame);else setTimeout(()=>{if(token===state.navToken)runRace(payload,token)},120)}requestAnimationFrame(openFrame)
+ const canvas=$('track'),ctx=canvas.getContext('2d');resizeCanvas(canvas);const preview=payload.field.map((h,i)=>({...h,display:0,lane:i}));drawPreRaceGate(ctx,preview,0);
+ await new Promise(r=>setTimeout(r,220));if(token!==state.navToken)return;
+ // iPhoneで音声が拒否・停止されても、最大7.6秒で必ず発走へ進む。
+ const fanfareTask=playRaceFanfare(state.race.name);
+ await Promise.race([fanfareTask,new Promise(r=>setTimeout(r,7600))]);
+ if(token!==state.navToken)return;
+ $('commentary').textContent='ゲートオープン！ 各馬一斉にスタート！';
+ try{playGateBang()}catch(e){}
+ const gate=$('startingGate');if(gate)gate.classList.add('open');
+ const begin=performance.now();
+ function openFrame(ts){if(token!==state.navToken)return;const p=Math.min(1,(ts-begin)/560);drawPreRaceGate(ctx,preview,1-Math.pow(1-p,3));if(p<1)requestAnimationFrame(openFrame);else setTimeout(()=>{if(token===state.navToken)runRace(payload,token)},90)}
+ requestAnimationFrame(openFrame)
 }
 function officialPlan(field,seed){const rnd=seeded(seed^0x9e3779b9);const rows=field.map(h=>({h,score:baseScore(h)+(rnd()-.5)*18})).sort((a,b)=>b.score-a.score);const base=28.55+rnd()*.06;const gap=field.length>=10?.010:field.length>=7?.013:.017;return rows.map((x,rank)=>({...x.h,finalRank:rank,finishWall:base+rank*gap+rnd()*.004}))}
 function controlledRunner(runners){if(state.mode==='solo')return runners.find(r=>r.number===state.selection);return runners.find(r=>r.playerId===state.player?.id)}
@@ -317,5 +328,6 @@ function saveOnlineEdit(){
 }
 function clearJoinUrl(){try{history.replaceState({},'',location.pathname)}catch(e){}}
 function parseJoin(){const p=new URLSearchParams(location.search),code=normalizeCode(p.get('join')),peer=normalizeCode(p.get('peer'));if(code){state.mode='join';state.roomCode=code;state.hostPeerId=peer||peerId(code);show('joinConfirm',false)}}
+document.addEventListener('pointerdown',()=>{unlockAudio()}, {capture:true,passive:true});
 $('backBtn').onclick=goBack;$('homeBtn').onclick=goHome;$('randomAbilityBtn').onclick=()=>{randomPoints(state.points);renderAbility()};$('partyRandomAbilityBtn').onclick=()=>{randomPoints(state.partyPoints,$('partyHorseType').value);renderPartyAbility()};$('partyHorseType').onchange=()=>{randomPoints(state.partyPoints,$('partyHorseType').value);renderPartyAbility()};$('partyHorseSource').onchange=()=>{togglePartySources();if($('partyHorseSource').value==='famous')applyFamousHorse()};$('partyFamousHorse').onchange=applyFamousHorse;$('partyJockeySource').onchange=togglePartySources;$('partyBtn').onclick=startPartySetup;$('partySetupBtn').onclick=beginPartyEntries;$('partyOpenEntryBtn').onclick=openPartyEntry;$('partyEntryDoneBtn').onclick=savePartyEntry;$('partyRevealBtn').onclick=revealPartyRace;$('partyKeepBtn').onclick=()=>startPartyNext(false);$('partyEditBtn').onclick=()=>startPartyNext(true);$('hostBtn').onclick=()=>beginCreate('host');$('joinYesBtn').onclick=()=>{clearJoinUrl();beginCreate('join')};$('joinNoBtn').onclick=()=>{clearJoinUrl();state.roomCode='';state.mode='party';show('home',false)};$('createNextBtn').onclick=onCreateNext;$('hostRaceCount').onchange=renderHostSchedule;$('createRoomBtn').onclick=createRoom;$('winTab').onclick=()=>setBet('win');$('placeTab').onclick=()=>setBet('place');$('stake').oninput=updateTicket;$('raceStartBtn').onclick=startFromBet;$('editOnlineBtn').onclick=openOnlineEdit;$('onlineEditSaveBtn').onclick=saveOnlineEdit;$('startOnlineBtn').onclick=hostGoBet;$('shareBtn').onclick=shareRoom;$('leaveRoomBtn').onclick=leaveRoom;$('nextBtn').onclick=nextRace;$('replayBtn').onclick=replay;$('whipBtn').onclick=tapWhip;$('resetWalletBtn').onclick=()=>{state.wallet=10000;saveWallet()};$('finalHomeBtn').onclick=goHome;window.addEventListener('beforeunload',()=>{if(state.isHost)broadcast({type:'roomClosed'});cleanupPeer()});window.addEventListener('resize',()=>{if(state.screen==='race')resizeCanvas($('track'))});
 setupSelects();renderAbility();saveWallet();show('home',false);parseJoin();

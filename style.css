@@ -40,3 +40,14 @@
 @media(max-width:560px){.invite-heading{align-items:flex-start;flex-direction:column;gap:7px}.invite-heading b{font-size:20px}.invite-heading>span{font-size:12px}}
 /* v26: fanfare and gate are rendered inside the live race track */
 #race .commentary{transition:background .2s,border-color .2s}
+/* v27 reliability and visual polish */
+#race .card, #race .race-stage { box-shadow: 0 18px 46px rgba(0,0,0,.28); }
+#commentary { min-height: 3.4em; display:flex; align-items:center; line-height:1.45; }
+#leaderText { letter-spacing:.01em; }
+#track { image-rendering:auto; }
+.starting-gate { transition: opacity .35s ease, transform .35s ease; }
+.starting-gate.open { opacity:.15; transform:translateX(-14px); pointer-events:none; }
+@media (max-width: 520px){
+  #commentary { font-size:1.02rem; }
+  #leaderText { font-size:clamp(1.35rem,6vw,2rem); }
+}
