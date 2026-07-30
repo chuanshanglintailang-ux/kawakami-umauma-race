@@ -22,7 +22,7 @@
       <div class="home-actions">
         <button id="partyBtn" class="primary big party-home">端末1台でみんなで遊ぶ<span>有名馬・有名騎手・オリジナル名で秘密対戦</span></button>
         <button id="hostBtn" class="big">ルームを作る<span>ルーム名を決めて主催</span></button>
-        <button id="joinBtn" class="big">ルームに参加<span>合言葉・QRコードで参加</span></button>
+        <div class="qr-only-note card"><b>参加者は主催者のQRコードを読み取って参加</b><span>ルーム名の手入力は廃止しました</span></div>
       </div>
       <p class="fine">ゲーム内ポイントのみ。実際のお金は使用しません。</p>
     </div>
@@ -135,10 +135,13 @@
   </section>
 
   <section id="joinSetup" class="screen">
-    <div class="screen-title"><small>JOIN ROOM</small><h2>ルームに参加</h2></div>
+    <div class="screen-title"><small>QR JOIN</small><h2>QRコードから参加</h2></div>
     <div class="card form-card">
-      <label>ルーム名・合言葉<input id="joinCode" maxlength="12" autocapitalize="characters" placeholder="例：UMARIN"></label>
-      <button id="joinRoomBtn" class="primary big">このルームに入る</button>
+      <div class="qr-scan-guide">📷</div>
+      <h3>主催者の画面に表示されたQRコードを、iPhoneのカメラで読み取ってください</h3>
+      <p class="hint">QRコードから開いた場合は、自動でルームへ接続します。ルーム名の手入力には対応していません。</p>
+      <input id="joinCode" type="hidden">
+      <button id="joinRoomBtn" class="primary big" hidden>QRから参加</button>
       <p id="joinError" class="error"></p>
     </div>
   </section>
@@ -155,8 +158,8 @@
   </section>
 
   <section id="lobby" class="screen">
-    <div class="room-code card"><span>ROOM</span><b id="roomCodeText">------</b><button id="copyCodeBtn">コピー</button></div>
-    <div class="qr-box card"><div id="qr"></div><div><h3>QRコードで参加</h3><p>友達のスマホで読み取ると、合言葉が入力された参加画面が開きます。</p><button id="shareBtn">参加リンクを共有</button></div></div>
+    <div class="room-code card"><span>QR ROOM</span><b id="roomCodeText">------</b><small>参加はQRコードのみ</small><button id="copyCodeBtn" hidden>コピー</button></div>
+    <div class="qr-box card"><div id="qr"></div><div><h3>QRコードで参加</h3><p>友達のiPhoneカメラで読み取るだけで、自動的にこのルームへ参加します。</p><button id="shareBtn">QR参加リンクを共有</button></div></div>
     <div class="card">
       <h2 id="lobbyRaceTitle">---</h2><p id="lobbyConditions" class="hint"></p>
       <div id="lobbyMembers" class="member-list"></div>
