@@ -109,3 +109,7 @@
  .my-horse-banner .my-horse-suffix{grid-area:suffix}
  .my-horse-banner .my-horse-name{grid-area:name;white-space:normal;overflow-wrap:anywhere}
 }
+
+/* v50: native iOS select reliability */
+#customJockeyType{position:relative;z-index:2;pointer-events:auto;-webkit-appearance:menulist;appearance:auto;touch-action:auto;min-height:54px}
+#customJockeyType:disabled{opacity:1}

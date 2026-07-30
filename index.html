@@ -109,7 +109,14 @@
       <label>馬の名前<input id="horseName" maxlength="18" placeholder="例：カワカミキング"></label>
       <label>脚質<select id="horseStyle"><option>逃げ</option><option selected>先行</option><option>差し</option><option>追込</option></select></label>
       <label>オンライン騎手名<input id="customJockeyName" maxlength="18" placeholder="例：カワカミ リンタロウ"></label>
-      <label>騎手タイプ<select id="customJockeyType"></select></label>
+      <label>騎手タイプ<select id="customJockeyType">
+        <option value="バランス型">バランス型</option>
+        <option value="スピード型">スピード型</option>
+        <option value="スタート型">スタート型</option>
+        <option value="末脚型">末脚型</option>
+        <option value="スタミナ型">スタミナ型</option>
+        <option value="道悪型">道悪型</option>
+      </select></label>
       <p class="hint">オンラインでは自分の馬と騎手の名前を自由に設定できます。騎手タイプの補正は全員同じ選択肢です。</p>
       <div class="ability-head"><div><b>能力ポイント</b><small>全能力90＋追加10ポイント</small></div><strong>残り <span id="pointsLeft">10</span></strong></div>
       <button id="randomAbilityBtn" class="ghost big">🎲 能力をおまかせ</button><div id="abilityEditor" class="ability-editor"></div>
@@ -217,6 +224,6 @@
 <footer>川上ウマウマレース v49 / 非公式ファンメイドゲーム</footer>
 <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="app.js?v=49"></script>
+<script src="app.js?v=50"></script>
 </body>
 </html>
