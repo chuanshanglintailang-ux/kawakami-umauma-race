@@ -39,8 +39,21 @@
         <label>レース<select id="partyRace"></select></label>
         <label>馬場<select id="partyGoing"><option>良</option><option>稍重</option><option>重</option><option>不良</option></select></label>
       </div>
-      <label class="switch-line"><input id="partyVoice" type="checkbox" checked><span>端末が対応していれば音声実況を使う</span></label>
       <button id="partySetupBtn" class="primary big">秘密入力を始める</button>
+    </div>
+  </section>
+
+  <section id="partyNext" class="screen">
+    <div class="screen-title"><small>NEXT RACE</small><h2>同じメンバーで次のレース</h2></div>
+    <div class="card form-card">
+      <p class="hint">前の馬名・騎手名・能力・脚質はそのまま残っています。変更する人だけ、1人ずつ秘密で編集できます。</p>
+      <div class="grid2">
+        <label>競馬場<select id="partyNextVenue"></select></label>
+        <label>レース<select id="partyNextRace"></select></label>
+        <label>馬場<select id="partyNextGoing"><option>良</option><option>稍重</option><option>重</option><option>不良</option></select></label>
+      </div>
+      <button id="partyKeepBtn" class="primary big">同じメンバーのまま次へ</button>
+      <button id="partyEditBtn" class="ghost big">1人ずつ秘密で編集する</button>
     </div>
   </section>
 
@@ -130,6 +143,17 @@
     </div>
   </section>
 
+  <section id="onlineEdit" class="screen">
+    <div class="screen-title"><small>EDIT ENTRY</small><h2>次のレース用に編集</h2></div>
+    <div class="card form-card">
+      <p class="hint">ルームから退出せず、自分の表示名と馬名だけ変更できます。ほかの能力・騎手・脚質はそのままです。</p>
+      <label>自分の名前<input id="onlinePlayerName" maxlength="18" autocomplete="off" placeholder="例：麟太郎"></label>
+      <label>馬の名前<input id="onlineHorseName" maxlength="18" autocomplete="off" placeholder="例：カワカミキング"></label>
+      <button id="onlineEditSaveBtn" class="primary big">保存してロビーへ戻る</button>
+      <p id="onlineEditError" class="error"></p>
+    </div>
+  </section>
+
   <section id="lobby" class="screen">
     <div class="room-code card"><span>ROOM</span><b id="roomCodeText">------</b><button id="copyCodeBtn">コピー</button></div>
     <div class="qr-box card"><div id="qr"></div><div><h3>QRコードで参加</h3><p>友達のスマホで読み取ると、合言葉が入力された参加画面が開きます。</p><button id="shareBtn">参加リンクを共有</button></div></div>
@@ -137,6 +161,7 @@
       <h2 id="lobbyRaceTitle">---</h2><p id="lobbyConditions" class="hint"></p>
       <div id="lobbyMembers" class="member-list"></div>
       <p id="lobbyStatus" class="hint">接続を準備しています…</p>
+      <button id="editOnlineBtn" class="ghost big">自分の名前・馬名を編集</button>
       <button id="startOnlineBtn" class="primary big" hidden>レース設定を確定して馬券へ</button>
       <button id="leaveRoomBtn" class="danger big">ルームを退出</button>
     </div>
@@ -159,15 +184,21 @@
   </section>
 
   <section id="waiting" class="screen"><div class="center card"><div class="spinner"></div><h2>主催者のスタート待ち</h2><p id="waitingText">参加者の準備を待っています。</p></div></section>
-  <section id="countdown" class="screen"><div class="countdown"><small>各馬ゲートイン完了</small><b id="countNum">3</b></div></section>
+  <section id="countdown" class="screen gate-screen">
+    <div class="gate-stage">
+      <div class="gate-title"><small id="fanfareLabel">G1 ORIGINAL FANFARE</small><h2 id="gateRaceTitle">---</h2><p id="gateStatus">各馬ゲートイン中…</p></div>
+      <div id="startingGate" class="starting-gate"></div>
+      <div class="countdown compact"><b id="countNum">3</b></div>
+    </div>
+  </section>
 
   <section id="race" class="screen race-screen">
-    <div class="race-hud"><div><h2 id="liveTitle">---</h2><p id="liveCond"></p></div><div><small>残り</small><b id="remaining">0m</b></div></div>
+    <div class="race-hud"><div><h2 id="liveTitle">---</h2><p id="liveCond"></p><div id="myHorseBanner" class="my-horse-banner" hidden></div></div><div><small>残り</small><b id="remaining">0m</b></div></div>
     <div id="commentary" class="commentary">各馬ゲートイン。</div>
     <div class="canvas-wrap"><canvas id="track" width="1200" height="720"></canvas></div>
     <div class="progress-caption"><span>START</span><b>レース進行</b><span>GOAL</span></div>
     <div id="progressTrack" class="progress-track"></div>
-    <div id="whipPanel" class="whip-panel" hidden><div><b id="whipHorse">選んだ馬を追う！</b><small>残り約400mから連打可能。連打しすぎると効果が小さくなります。</small></div><button id="whipBtn" class="whip-btn">🏇 ムチ！<span id="whipCount">0回</span></button></div>
+    <div id="whipPanel" class="whip-panel" hidden><div><b id="whipHorse">選んだ馬を追う！</b><small>残り約400mから連打可能。連打しすぎると効果が小さくなります。</small></div><button id="whipBtn" class="whip-btn">🏇 ムチ！</button></div>
     <div class="live-footer"><b id="clock">0:00.0</b><span id="leaderText">先頭：---</span></div>
   </section>
 
@@ -180,7 +211,7 @@
     <button id="resetWalletBtn" class="ghost big">ポイントを10,000に戻す</button>
   </section>
 </main>
-<footer>川上ウマウマレース v19 / 非公式ファンメイドゲーム</footer>
+<footer>川上ウマウマレース v20 / 非公式ファンメイドゲーム</footer>
 <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="app.js"></script>
