@@ -164,8 +164,8 @@
   </section>
 
   <section id="lobby" class="screen">
-    <div class="invite-heading card"><span>ONLINE ROOM</span><div><b>招待用QRコード</b><small>このQRコードを読み取った人だけ参加できます</small></div></div>
-    <div class="qr-box card"><div id="qr"></div><div><h3>QRコードで参加</h3><p>友達のiPhoneカメラで読み取ると、参加確認画面が開きます。</p><button id="shareBtn">参加用QRリンクを共有</button></div></div>
+    <div id="inviteHeading" class="invite-heading card"><span>ONLINE ROOM</span><div><b>招待用QRコード</b><small>このQRコードを読み取った人だけ参加できます</small></div></div>
+    <div id="qrBox" class="qr-box card"><div id="qr"></div><div><h3>QRコードで参加</h3><p>友達のiPhoneカメラで読み取ると、参加確認画面が開きます。</p><button id="shareBtn">参加用QRリンクを共有</button></div></div>
     <div class="card">
       <div id="tournamentProgress" class="tournament-progress"></div>
       <h2 id="lobbyRaceTitle">---</h2><p id="lobbyConditions" class="hint"></p>
@@ -197,6 +197,7 @@
   <section id="race" class="screen race-screen">
     <div class="race-hud"><div><h2 id="liveTitle">---</h2><p id="liveCond"></p><div id="myHorseBanner" class="my-horse-banner" hidden></div></div><div><small>残り</small><b id="remaining">0m</b></div></div>
     <div id="commentary" class="commentary">各馬ゲートイン。</div>
+    <div id="liveSpectatorBets" class="live-spectator-bets" hidden></div>
     <div class="canvas-wrap"><canvas id="track" width="1200" height="720"></canvas></div>
     <div class="progress-caption"><span>START</span><b>レース進行</b><span>GOAL</span></div>
     <div id="progressTrack" class="progress-track"></div>
@@ -221,9 +222,9 @@
     <button id="finalHomeBtn" class="primary big">ホームへ戻る</button>
   </section>
 </main>
-<footer>川上ウマウマレース v49 / 非公式ファンメイドゲーム</footer>
+<footer>川上ウマウマレース v52 / 非公式ファンメイドゲーム</footer>
 <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="app.js?v=50"></script>
+<script src="app.js?v=52"></script>
 </body>
 </html>
